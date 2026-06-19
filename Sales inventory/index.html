@@ -29,11 +29,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font
 #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--sb-bg);background-image:radial-gradient(ellipse 55% 60% at 68% 50%,#1a3825 0%,transparent 68%);}
 .lw{display:flex;max-width:860px;width:100%;margin:1rem;border-radius:var(--r-xl);overflow:hidden;box-shadow:0 28px 90px rgba(0,0,0,.55);}
 .ll{background:linear-gradient(155deg,#0e2a50 0%,#05101e 100%);padding:3rem 2.5rem;flex:1;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid var(--sb-brd);}
-.ll-brand{display:flex;align-items:center;gap:11px;}
-.brand-logo{width:42px;height:auto;border-radius:10px;object-fit:contain;}
+.ll-brand{display:flex;align-items:flex-start;gap:18px;}
+.brand-logo{width:168px;height:auto;border-radius:10px;object-fit:contain;}
 .ll-icon{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#1a5fcb,#0a2d80);display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;box-shadow:0 4px 14px rgba(0,0,0,.35);}
-.ll-bname{font-size:14px;font-weight:600;color:#d0e8ff;line-height:1.2;}
-.ll-bsub{font-size:11px;color:var(--sb-muted);}
+.ll-bname{display:none;}
+.ll-bsub{font-size:44px;color:#ffffff;line-height:1.05;}
 .ll-hero{margin:auto 0;}
 .ll-hero h1{font-size:30px;font-weight:600;color:#d0e8ff;line-height:1.25;margin-bottom:10px;}
 .ll-hero p{font-size:13px;color:var(--sb-text);line-height:1.75;max-width:240px;}
@@ -74,7 +74,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font
 #app.on{display:flex;flex-direction:column;}
 
 /* TOPBAR */
-.topbar{background:var(--sb-bg);border-bottom:1px solid var(--sb-brd);padding:0 1.25rem;display:flex;align-items:center;justify-content:space-between;height:52px;flex-shrink:0;}
+.topbar{background:var(--sb-bg);border-bottom:1px solid var(--sb-brd);padding:0 1.25rem;display:flex;align-items:center;justify-content:space-between;height:180px;flex-shrink:0;}
+.topbar .brand-logo{width:168px;height:auto;}
 .tb-left{display:flex;align-items:center;gap:10px;}
 .mobile-menu-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;border:1.5px solid var(--brd);background:var(--surf);color:var(--txt);cursor:pointer;font-size:16px;}
 .mobile-menu-toggle i{font-size:18px;}
@@ -319,7 +320,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
     <div class="ll">
       <div class="ll-brand">
         <img class="brand-logo" src="A-lect water.png" alt="A-lect logo">
-        <div><div class="ll-bname">A-lect</div><div class="ll-bsub">Operations Portal</div></div>
+        <div><div class="ll-bsub">Operations Portal & Point of Sale</div></div>
       </div>
       <div class="ll-hero">
         <h1>A-lect<br>Water Portal</h1>
@@ -392,8 +393,8 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <!-- DATE BUTTON -->
                 <div class="field full">
                   <label>Date</label>
-                  <input type="date" id="s-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onDateChange()">
-                  <button class="date-btn" id="s-date-btn" onclick="openDatePicker()">
+                  <input type="date" id="s-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onDateChange('s-date','s-date-label')">
+                  <button class="date-btn" id="s-date-btn" onclick="openDatePicker('s-date')">
                     <i class="ti ti-calendar"></i>
                     <span class="db-label" id="s-date-label">Today</span>
                     <span class="db-change">tap to change</span>
@@ -487,6 +488,13 @@ table.dt tbody tr:hover td{background:var(--surf2);}
         </div>
         <div class="card" style="margin-top:1.25rem;">
           <div class="card-title"><i class="ti ti-clock"></i> Recent sales</div>
+          <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;">
+            <div class="field" style="flex:1;min-width:220px;margin-bottom:0;">
+              <label>Search recent sales</label>
+              <input type="text" id="recent-sales-search" placeholder="product, note, method, sales ID..." oninput="renderRecentSales()">
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="clearRecentSalesSearch()"><i class="ti ti-refresh"></i> Clear</button>
+          </div>
           <div id="recent-sales-list" class="recent-sales-list">
             <div class="empty" style="padding:22px 0;">No recent sales yet</div>
           </div>
@@ -513,10 +521,17 @@ table.dt tbody tr:hover td{background:var(--surf2);}
             <div class="pos-body">
               <div class="ok" id="prod-ok"><i class="ti ti-circle-check"></i> Batch logged!</div>
               <div class="fg">
-                <div class="field"><label>Date</label><input type="date" id="p-date"></div>
-                <div class="field"><label>Batch ID</label><input type="text" id="p-batch" placeholder="e.g. A0022" style="font-family:'DM Mono',monospace"></div>
+                <div class="field"><label>Date</label>
+                  <input type="date" id="p-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onDateChange('p-date','p-date-label')">
+                  <button class="date-btn" id="p-date-btn" onclick="openDatePicker('p-date')">
+                    <i class="ti ti-calendar"></i>
+                    <span class="db-label" id="p-date-label">Today</span>
+                    <span class="db-change">tap to change</span>
+                  </button>
+                </div>
+                <div class="field"><label>Batch ID</label><input type="text" id="p-batch" placeholder="e.g. A0022" readonly style="font-family:'DM Mono',monospace;background:var(--surf2);cursor:not-allowed"></div>
                 <div class="field"><label>Material utilized</label>
-                  <select id="p-mat"><option value="A0001">A0001 — Printed roll</option><option value="A0002">A0002 — Packing bag</option></select>
+                  <select id="p-mat"><option value="">Select raw material</option></select>
                 </div>
                 <div class="field"><label>Product type</label>
                   <select id="p-type"><option>Pure water 50L</option><option>Dispenser water</option><option>Bottle water 50CL</option></select>
@@ -550,7 +565,14 @@ table.dt tbody tr:hover td{background:var(--surf2);}
             <div class="ph"><div><div class="ph-title">Log raw materials used</div><div class="ph-sub">Record rolls and kilograms used per date and category</div></div></div>
             <div class="card">
               <div class="fg">
-                <div class="field"><label>Date</label><input type="date" id="rm-date"></div>
+                <div class="field"><label>Date</label>
+                  <input type="date" id="rm-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onDateChange('rm-date','rm-date-label')">
+                  <button class="date-btn" id="rm-date-btn" onclick="openDatePicker('rm-date')">
+                    <i class="ti ti-calendar"></i>
+                    <span class="db-label" id="rm-date-label">Today</span>
+                    <span class="db-change">tap to change</span>
+                  </button>
+                </div>
                 <div class="field"><label>Category</label>
                   <select id="rm-cat"><option>PRINTED ROLL</option><option>PACKING BAG</option></select>
                 </div>
@@ -582,7 +604,14 @@ table.dt tbody tr:hover td{background:var(--surf2);}
             <div class="pos-body">
               <div class="ok" id="exp-ok"><i class="ti ti-circle-check"></i> Expense recorded!</div>
               <div class="fg">
-                <div class="field"><label>Date</label><input type="date" id="e-date"></div>
+                <div class="field"><label>Date</label>
+                  <input type="date" id="e-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onDateChange('e-date','e-date-label')">
+                  <button class="date-btn" id="e-date-btn" onclick="openDatePicker('e-date')">
+                    <i class="ti ti-calendar"></i>
+                    <span class="db-label" id="e-date-label">Today</span>
+                    <span class="db-change">tap to change</span>
+                  </button>
+                </div>
                 <div class="field"><label>Category</label>
                   <select id="e-cat">
                     <option>Operator</option><option>Fuel</option><option>Repair</option><option>Driver</option>
@@ -608,6 +637,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
             <div class="r-head"><h3><i class="ti ti-report-money" style="color:#4d9aff"></i> Expense tracker</h3></div>
             <div class="r-body">
               <div class="srow"><span class="sl">Entries logged</span><span class="sv" id="e-count">0</span></div>
+              <div class="srow"><span class="sl">Pending approval</span><span class="sv" id="e-pending">0</span></div>
               <div class="srow"><span class="sl">Total spent</span><span class="sv" style="color:var(--red)" id="e-total">₦0</span></div>
             </div>
             <div style="padding:0 1.2rem .5rem" id="e-cats"></div>
@@ -619,10 +649,23 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <!-- MY SALES -->
       <div class="page" id="page-mysales">
         <div class="ph"><div><div class="ph-title">My sales</div><div class="ph-sub">Sales you have recorded this session</div></div></div>
+      <div class="fg" style="grid-template-columns:1fr 1fr auto auto;align-items:flex-end;gap:.9rem;margin-bottom:1rem;">
+        <div class="field"><label>From</label><input type="date" id="mysales-start"></div>
+        <div class="field"><label>To</label><input type="date" id="mysales-end"></div>
+        <button class="btn btn-outline btn-sm" onclick="renderMySales()">Apply</button>
+        <button class="btn btn-outline btn-sm" onclick="clearMySalesRange()">Clear</button>
+      </div>
         <div class="mrow" style="max-width:540px;margin-bottom:1.5rem">
           <div class="mc b"><div class="mc-ico"><i class="ti ti-cash"></i></div><div class="mc-lbl">My revenue</div><div class="mc-val" id="my-rev">₦0</div><div class="mc-sub">this session</div></div>
           <div class="mc g"><div class="mc-ico"><i class="ti ti-shopping-cart"></i></div><div class="mc-lbl">Transactions</div><div class="mc-val" id="my-txn">0</div><div class="mc-sub">entries</div></div>
           <div class="mc a"><div class="mc-ico"><i class="ti ti-packages"></i></div><div class="mc-lbl">Bags sold</div><div class="mc-val" id="my-bags">0</div><div class="mc-sub">units</div></div>
+        </div>
+        <div class="mrow" style="max-width:840px;margin-bottom:1.5rem">
+          <div class="mc t"><div class="mc-ico"><i class="ti ti-wallet"></i></div><div class="mc-lbl">Total cash</div><div class="mc-val" id="my-cash">₦0</div><div class="mc-sub">received</div></div>
+          <div class="mc b"><div class="mc-ico"><i class="ti ti-arrows-right-left"></i></div><div class="mc-lbl">Total transfer</div><div class="mc-val" id="my-transfer">₦0</div><div class="mc-sub">received</div></div>
+          <div class="mc g"><div class="mc-ico"><i class="ti ti-device-mobile"></i></div><div class="mc-lbl">Total POS</div><div class="mc-val" id="my-pos">₦0</div><div class="mc-sub">received</div></div>
+          <div class="mc a"><div class="mc-ico"><i class="ti ti-arrow-back-up"></i></div><div class="mc-lbl">Total change</div><div class="mc-val" id="my-change">₦0</div><div class="mc-sub">returned</div></div>
+          <div class="mc r"><div class="mc-ico"><i class="ti ti-report-money"></i></div><div class="mc-lbl">Expected cash</div><div class="mc-val" id="my-expected-cash">₦0</div><div class="mc-sub">cash − change</div></div>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div class="tw"><table class="dt">
@@ -638,11 +681,19 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           <div><div class="ph-title">Dashboard <span class="atag"><i class="ti ti-lock" style="font-size:8px"></i> Admin</span></div><div class="ph-sub">Live overview — all staff activity</div></div>
           <button class="btn btn-outline btn-sm" onclick="renderDash()"><i class="ti ti-refresh"></i> Refresh</button>
         </div>
+        <div class="fg" style="grid-template-columns:1fr 1fr auto auto;align-items:flex-end;gap:.9rem;margin-bottom:1rem;">
+          <div class="field"><label>From</label><input type="date" id="dash-start"></div>
+          <div class="field"><label>To</label><input type="date" id="dash-end"></div>
+          <button class="btn btn-outline btn-sm" onclick="renderDash()">Apply</button>
+          <button class="btn btn-outline btn-sm" onclick="clearDashRange()">Clear</button>
+        </div>
         <div class="mrow">
           <div class="mc g"><div class="mc-ico"><i class="ti ti-cash"></i></div><div class="mc-lbl">Total revenue</div><div class="mc-val" id="d-rev">₦0</div><div class="mc-sub">all sales</div></div>
           <div class="mc b"><div class="mc-ico"><i class="ti ti-packages"></i></div><div class="mc-lbl">Produced</div><div class="mc-val" id="d-prod">0</div><div class="mc-sub">bags</div></div>
           <div class="mc t"><div class="mc-ico"><i class="ti ti-shopping-cart"></i></div><div class="mc-lbl">Sold</div><div class="mc-val" id="d-sold">0</div><div class="mc-sub">bags</div></div>
           <div class="mc r"><div class="mc-ico"><i class="ti ti-report-money"></i></div><div class="mc-lbl">Expenses</div><div class="mc-val" id="d-exp">₦0</div><div class="mc-sub">total</div></div>
+          <div class="mc b"><div class="mc-ico"><i class="ti ti-box"></i></div><div class="mc-lbl">Raw material entries</div><div class="mc-val" id="d-raw-count">0</div><div class="mc-sub">records</div></div>
+          <div class="mc a"><div class="mc-ico"><i class="ti ti-report-dollar"></i></div><div class="mc-lbl">Raw material cost</div><div class="mc-val" id="d-raw-cost">₦0</div><div class="mc-sub">range total</div></div>
           <div class="mc a"><div class="mc-ico"><i class="ti ti-alert-triangle"></i></div><div class="mc-lbl">Damaged</div><div class="mc-val" id="d-dmg">0</div><div class="mc-sub">units</div></div>
           <div class="mc g"><div class="mc-ico"><i class="ti ti-trending-up"></i></div><div class="mc-lbl">Net profit</div><div class="mc-val" id="d-profit">₦0</div><div class="mc-sub">rev − costs</div></div>
         </div>
@@ -659,9 +710,15 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <!-- ALL SALES -->
       <div class="page" id="page-asales">
         <div class="ph"><div><div class="ph-title">All sales <span class="atag"><i class="ti ti-lock" style="font-size:8px"></i> Admin</span></div><div class="ph-sub">Every transaction across all staff</div></div></div>
+      <div class="fg" style="grid-template-columns:1fr 1fr auto auto;align-items:flex-end;gap:.9rem;margin-bottom:1rem;">
+        <div class="field"><label>From</label><input type="date" id="asales-start"></div>
+        <div class="field"><label>To</label><input type="date" id="asales-end"></div>
+        <button class="btn btn-outline btn-sm" onclick="renderAS(document.querySelector('#page-asales .sbar input').value)">Apply</button>
+        <button class="btn btn-outline btn-sm" onclick="clearASRange()">Clear</button>
+      </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:.9rem 1.2rem;display:flex;gap:9px;align-items:center;border-bottom:1.5px solid var(--brd);flex-wrap:wrap">
-            <div class="sbar"><i class="ti ti-search"></i><input type="text" placeholder="Search product, staff, method…" oninput="renderAS(this.value)"></div>
+            <div class="sbar"><i class="ti ti-search"></i><input type="text" placeholder="Search product, staff, method, sales ID…" oninput="renderAS(this.value)"></div>
             <button class="btn btn-outline btn-sm" onclick="exportCSV('sales')"><i class="ti ti-download"></i> Export CSV</button>
           </div>
           <div class="tw"><table class="dt">
@@ -674,6 +731,12 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <!-- ALL PRODUCTION -->
       <div class="page" id="page-aprod">
         <div class="ph"><div><div class="ph-title">All production <span class="atag"><i class="ti ti-lock" style="font-size:8px"></i> Admin</span></div><div class="ph-sub">Production batches logged by all staff</div></div></div>
+      <div class="fg" style="grid-template-columns:1fr 1fr auto auto;align-items:flex-end;gap:.9rem;margin-bottom:1rem;">
+        <div class="field"><label>From</label><input type="date" id="aprod-start"></div>
+        <div class="field"><label>To</label><input type="date" id="aprod-end"></div>
+        <button class="btn btn-outline btn-sm" onclick="renderAP()">Apply</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAProdRange()">Clear</button>
+      </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:.9rem 1.2rem;border-bottom:1.5px solid var(--brd)">
             <button class="btn btn-outline btn-sm" onclick="exportCSV('production')"><i class="ti ti-download"></i> Export CSV</button>
@@ -688,12 +751,18 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <!-- ALL EXPENSES -->
       <div class="page" id="page-aexp">
         <div class="ph"><div><div class="ph-title">All expenses <span class="atag"><i class="ti ti-lock" style="font-size:8px"></i> Admin</span></div><div class="ph-sub">Every cost recorded by all staff</div></div></div>
+      <div class="fg" style="grid-template-columns:1fr 1fr auto auto;align-items:flex-end;gap:.9rem;margin-bottom:1rem;">
+        <div class="field"><label>From</label><input type="date" id="aexp-start"></div>
+        <div class="field"><label>To</label><input type="date" id="aexp-end"></div>
+        <button class="btn btn-outline btn-sm" onclick="renderAE()">Apply</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAExpRange()">Clear</button>
+      </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:.9rem 1.2rem;border-bottom:1.5px solid var(--brd)">
             <button class="btn btn-outline btn-sm" onclick="exportCSV('expenses')"><i class="ti ti-download"></i> Export CSV</button>
           </div>
           <div class="tw"><table class="dt">
-            <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid by</th><th>Staff</th><th>Note</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid by</th><th>Staff</th><th>Status</th><th>Note</th><th></th></tr></thead>
             <tbody id="ae-tbody"></tbody>
           </table></div>
         </div>
@@ -801,23 +870,30 @@ function goPage(name,btn){
   const map={mysales:renderMySales,dash:renderDash,asales:()=>renderAS(''),aprod:renderAP,aexp:renderAE,users:renderUsers};
   if(map[name])map[name]();
   if(name==='sale') renderRecentSales();
-  if(name==='prod') generateBatchCode();
-  if(name==='raw') renderRawMaterials();
+  if(name==='prod'){ generateBatchCode(); populateProductionMaterials(); }
+  if(name==='raw'){
+    const rmDate = document.getElementById('rm-date');
+    if(rmDate){
+      if(!rmDate.value) rmDate.value = TODAY;
+      if(rmDate.value !== TODAY) openRawDatePicker();
+    }
+    renderRawMaterials();
+  }
   if(window.innerWidth <= 700) closeMobileMenu();
 }
 
 function setDates(){
   const t=new Date().toISOString().split('T')[0];
   // s-date handled by date button (shows Today by default)
-  ['p-date','e-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  ['p-date','e-date','rm-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
 }
 
 /* SALE */
 const TODAY = new Date().toISOString().split('T')[0];
 let pendingSale = null;
 
-function openDatePicker(){
-  const inp = document.getElementById('s-date');
+function openDatePicker(id){
+  const inp = document.getElementById(id || 's-date');
   inp.style.position = 'fixed';
   inp.style.opacity = '0';
   inp.style.top = '0';
@@ -830,11 +906,11 @@ function openDatePicker(){
   inp.addEventListener('blur', ()=>{ inp.style.pointerEvents='none'; inp.style.opacity='0'; inp.style.position='absolute'; inp.style.width='1px'; inp.style.height='1px'; }, {once:true});
 }
 
-function onDateChange(){
-  const val = document.getElementById('s-date').value;
-  const lbl = document.getElementById('s-date-label');
+function onDateChange(id, labelId){
+  const val = document.getElementById(id).value;
+  const lbl = document.getElementById(labelId);
   if(!val){ lbl.textContent = 'Today'; return; }
-  const inp = document.getElementById('s-date');
+  const inp = document.getElementById(id);
   inp.style.pointerEvents='none'; inp.style.opacity='0'; inp.style.position='absolute'; inp.style.width='1px'; inp.style.height='1px';
   if(val === TODAY){ lbl.textContent = 'Today'; }
   else {
@@ -842,8 +918,20 @@ function onDateChange(){
     const months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
     lbl.textContent = parseInt(d)+' '+months[parseInt(m)-1]+' '+y.slice(2);
   }
-  document.getElementById('r-date').textContent = val===TODAY ? 'Today' : lbl.textContent;
-  updateR();
+  if(id==='s-date'){
+    document.getElementById('r-date').textContent = val===TODAY ? 'Today' : lbl.textContent;
+    updateR();
+  }
+  if(id==='p-date'){
+    document.getElementById('p-date-label').textContent = val===TODAY ? 'Today' : lbl.textContent;
+    updateProdPanel();
+  }
+  if(id==='rm-date'){
+    document.getElementById('rm-date-label').textContent = val===TODAY ? 'Today' : lbl.textContent;
+  }
+  if(id==='e-date'){
+    document.getElementById('e-date-label').textContent = val===TODAY ? 'Today' : lbl.textContent;
+  }
 }
 
 function selM(m, el){
@@ -1088,9 +1176,13 @@ function generateCode128DataURL(text, opts){
 function renderRecentSales(){
   const list = document.getElementById('recent-sales-list');
   if(!list) return;
-  const recent = DB.sales.slice(-5).reverse();
+  const query = document.getElementById('recent-sales-search')?.value.trim().toLowerCase() || '';
+  const recent = DB.sales.filter(s=>s.date===TODAY).reverse().filter(s=>{
+    if(!query) return true;
+    return [s.product,s.staff,s.method,s.note,s.salesId].join(' ').toLowerCase().includes(query);
+  });
   if(!recent.length){
-    list.innerHTML = '<div class="empty" style="padding:22px 0;">No recent sales yet</div>';
+    list.innerHTML = '<div class="empty" style="padding:22px 0;">No matching sales for today</div>';
     return;
   }
   list.innerHTML = recent.map(s=>`
@@ -1100,8 +1192,22 @@ function renderRecentSales(){
         <span>${s.qty} ${s.qty===1?'unit':'units'} · ₦${s.amount.toLocaleString()}</span>
         <span style="font-size:12px;color:${s.damaged? 'var(--red)' :'var(--txt3)'}">${s.damaged? `${s.damaged} damaged` : 'No damage'}</span>
       </div>
-      <div style="text-align:right;font-size:12px;color:var(--txt3);">${s.date}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <div style="text-align:right;font-size:12px;color:var(--txt3);">${s.date}</div>
+        <button class="btn btn-outline btn-sm" onclick="printSaleById(${s.id})"><i class="ti ti-printer"></i> Print</button>
+      </div>
     </div>`).join('');
+}
+
+function printSaleById(id){
+  const sale = DB.sales.find(s=>s.id===id);
+  if(sale) printSaleReceipt(sale);
+}
+
+function clearRecentSalesSearch(){
+  const el = document.getElementById('recent-sales-search');
+  if(el) el.value = '';
+  renderRecentSales();
 }
 
 /* PRODUCTION */
@@ -1113,7 +1219,7 @@ function submitProd(){
   const qty=parseFloat(document.getElementById('p-qty').value);
   const dmg=parseFloat(document.getElementById('p-dmg').value)||0;
   const note=document.getElementById('p-note').value;
-  if(!date||!batch||!qty){toast('Fill in date, batch ID and quantity','e');return;}
+  if(!date||!mat||!batch||!qty){toast('Fill in date, raw material, batch ID and quantity','e');return;}
   DB.production.push({id:DB.nid(),date,batch,material:mat,type,qty,damaged:dmg,note,staff:CU.name,staffId:CU.id});
   showOk('prod-ok');clearProd();toast('Batch logged!','s');updateProdPanel();
 }
@@ -1128,6 +1234,13 @@ function generateBatchCode(){
   const seq = String(count+1).padStart(2,'0');
   const code = `PB${ymd}-${seq}`;
   const el = document.getElementById('p-batch'); if(el) el.value = code;
+}
+
+function generateRawMaterialId(date){
+  const parts = date.split('-');
+  const mmdd = parts.length === 3 ? parts[1] + parts[2] : new Date(date).toISOString().slice(5).replace('-','');
+  const count = DB.rawMaterials.filter(r=>r.date===date).length;
+  return `ALT/${mmdd}/${String(count+1).padStart(3,'0')}`;
 }
 
 function calcRMTotals(){
@@ -1150,7 +1263,7 @@ function addFigRow(val){
 }
 
 function clearRawMaterialForm(){
-  document.getElementById('rm-date').value='';
+  document.getElementById('rm-date').value=TODAY;
   document.getElementById('rm-cat').value='PACKING BAG';
   document.getElementById('rm-rolls-pk').value='0';
   document.getElementById('rm-unit-cost').value='0';
@@ -1169,10 +1282,12 @@ function saveRawMaterial(){
   const amount = parseFloat(document.getElementById('rm-amount').value)||0;
   const note = document.getElementById('rm-note').value;
   if(!cat||qtyKg<=0||unitCost<=0){toast('Provide category, KG and unit cost','e');return;}
-  DB.rawMaterials.push({id:DB.nid(),date,category:cat,rollsPerPK:rollsPk,qtyKg,unitCost,amount,note});
-  toast('Raw material logged','s');
+  const shortId = generateRawMaterialId(date);
+  DB.rawMaterials.push({id:DB.nid(),shortId,date,category:cat,rollsPerPK:rollsPk,qtyKg,unitCost,amount,note});
+  toast(`Raw material logged (${shortId})`,'s');
   clearRawMaterialForm();
   renderRawMaterials();
+  populateProductionMaterials();
   updateProdPanel();
 }
 
@@ -1180,8 +1295,9 @@ function renderRawMaterials(){
   const el = document.getElementById('raw-list');
   if(!el) return;
   if(!DB.rawMaterials.length){el.innerHTML='<div class="empty">No raw material records yet</div>';return;}
-  const rows = DB.rawMaterials.slice().reverse().map(r=>`<div style="padding:10px;border-bottom:1px solid var(--brd)"><div style="display:flex;justify-content:space-between"><div><strong>${r.category}</strong> — ${r.date}</div><div>₦${r.amount.toLocaleString()}</div></div><div style="font-size:13px;color:var(--txt3)">KG: ${r.qtyKg} · Rolls/PK: ${r.rollsPerPK} ${r.note? '· '+r.note : ''}</div></div>`).join('');
+  const rows = DB.rawMaterials.slice().reverse().map(r=>`<div style="padding:10px;border-bottom:1px solid var(--brd)"><div style="display:flex;justify-content:space-between"><div><strong>${r.shortId || ''}</strong> — ${r.category} — ${r.date}</div><div>₦${r.amount.toLocaleString()}</div></div><div style="font-size:13px;color:var(--txt3)">KG: ${r.qtyKg} · Rolls/PK: ${r.rollsPerPK} ${r.note? '· '+r.note : ''}</div></div>`).join('');
   el.innerHTML = rows;
+  populateProductionMaterials();
 }
 
 function updateProdPanel(){
@@ -1198,6 +1314,15 @@ function updateProdPanel(){
   document.getElementById('p-per-kg').textContent = totalMatKg>0 ? (totalProdQty/totalMatKg).toFixed(2) : '—';
 }
 
+function populateProductionMaterials(){
+  const matSelect = document.getElementById('p-mat');
+  if(!matSelect) return;
+  const options = DB.rawMaterials.slice().reverse().map(r => `<option value="${r.shortId}">${r.shortId} — ${r.category} — ${r.qtyKg}KG</option>`);
+  matSelect.innerHTML = options.length ? `
+    <option value="">Select raw material</option>
+    ${options.join('')}` : '<option value="">No raw material entries</option>';
+}
+
 /* EXPENSE */
 function submitExp(){
   const date=document.getElementById('e-date').value;
@@ -1207,13 +1332,48 @@ function submitExp(){
   const paid=document.getElementById('e-paid').value;
   const note=document.getElementById('e-note').value;
   if(!date||!desc||!amt){toast('Fill in date, description and amount','e');return;}
-  DB.expenses.push({id:DB.nid(),date,cat,desc,amount:amt,paid,note,staff:CU.name,staffId:CU.id});
-  showOk('exp-ok');clearExp();toast('Expense logged!','s');updateExpPanel();
+  DB.expenses.push({id:DB.nid(),date,cat,desc,amount:amt,paid,note,staff:CU.name,staffId:CU.id,approved:false,approvedBy:null,approvedAt:null});
+  showOk('exp-ok');clearExp();toast('Expense logged! Pending approval','s');updateExpPanel();
+}
+function approveExpense(id){
+  if(!CU || (CU.role !== 'manager' && CU.role !== 'admin')){toast('Manager approval only','e');return;}
+  const exp = DB.expenses.find(e=>e.id===id);
+  if(!exp) return;
+  exp.approved = true;
+  exp.approvedBy = CU.name;
+  exp.approvedAt = TODAY;
+  toast('Expense approved','s');
+  updateExpPanel();
+  if(document.getElementById('page-aexp').classList.contains('active')) renderAE();
 }
 function clearExp(){['e-desc','e-amt','e-note'].forEach(id=>document.getElementById(id).value='');setDates();}
+function getDateRange(prefix){
+  return {
+    start: document.getElementById(prefix+'-start')?.value || '',
+    end: document.getElementById(prefix+'-end')?.value || ''
+  };
+}
+function dateInRange(date, start, end){
+  if(start && date < start) return false;
+  if(end && date > end) return false;
+  return true;
+}
+function clearMySalesRange(){['mysales-start','mysales-end'].forEach(id=>document.getElementById(id).value='');renderMySales();}
+function clearDashRange(){['dash-start','dash-end'].forEach(id=>document.getElementById(id).value='');renderDash();}
+function clearASRange(){['asales-start','asales-end'].forEach(id=>document.getElementById(id).value='');renderAS(document.querySelector('#page-asales .sbar input').value);}
+function clearAProdRange(){['aprod-start','aprod-end'].forEach(id=>document.getElementById(id).value='');renderAP();}
+function clearAExpRange(){['aexp-start','aexp-end'].forEach(id=>document.getElementById(id).value='');renderAE();}
+function openRawDatePicker(){
+  const inp=document.getElementById('rm-date');
+  if(!inp) return;
+  inp.focus();
+  if(inp.showPicker) inp.showPicker();
+}
 function updateExpPanel(){
   const total=DB.expenses.reduce((a,e)=>a+e.amount,0);
+  const pending=DB.expenses.filter(e=>!e.approved).length;
   document.getElementById('e-count').textContent=DB.expenses.length;
+  document.getElementById('e-pending').textContent=pending.toLocaleString();
   document.getElementById('e-total').textContent='₦'+total.toLocaleString();
   const cats={};DB.expenses.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amount;});
   const CC={Operator:'#7F77DD',Fuel:'#1D9E75',Repair:'#c03838',Driver:'#c08a18',Maintenance:'#2d58c2','Equipment & Machinery':'#888'};
@@ -1226,10 +1386,21 @@ function updateExpPanel(){
 
 /* MY SALES */
 function renderMySales(){
-  const d=DB.sales.filter(s=>s.staffId===CU.id);
+  const range = getDateRange('mysales');
+  const d=DB.sales.filter(s=>s.staffId===CU.id && dateInRange(s.date, range.start, range.end));
+  const totalCash = d.reduce((a,s)=>a + ((s.method==='CASH' ? s.amount : (s.method==='SPLIT_CT' || s.method==='SPLIT_CP') ? s.cashSplit : 0)),0);
+  const totalTransfer = d.reduce((a,s)=>a + ((s.method==='TRANSFER' ? s.amount : s.method==='SPLIT_CT' ? s.otherSplit : 0)),0);
+  const totalPos = d.reduce((a,s)=>a + ((s.method==='POS' ? s.amount : s.method==='SPLIT_CP' ? s.otherSplit : 0)),0);
+  const totalChange = d.reduce((a,s)=>a + (s.changeGiven||0),0);
+  const expectedCash = totalCash - totalChange;
   document.getElementById('my-rev').textContent='₦'+d.reduce((a,s)=>a+s.amount,0).toLocaleString();
   document.getElementById('my-txn').textContent=d.length;
   document.getElementById('my-bags').textContent=d.reduce((a,s)=>a+s.qty,0).toLocaleString();
+  document.getElementById('my-cash').textContent='₦'+totalCash.toLocaleString();
+  document.getElementById('my-transfer').textContent='₦'+totalTransfer.toLocaleString();
+  document.getElementById('my-pos').textContent='₦'+totalPos.toLocaleString();
+  document.getElementById('my-change').textContent='₦'+totalChange.toLocaleString();
+  document.getElementById('my-expected-cash').textContent='₦'+expectedCash.toLocaleString();
   const tb=document.getElementById('my-tbody');
   if(!d.length){tb.innerHTML='<tr><td colspan="7"><div class="empty"><i class="ti ti-shopping-cart"></i><p>No sales yet this session</p></div></td></tr>';return;}
   tb.innerHTML=d.slice().reverse().map(s=>`<tr>
@@ -1243,7 +1414,12 @@ function renderMySales(){
 
 /* ALL SALES */
 function renderAS(q){
-  const d=DB.sales.filter(s=>!q||[s.product,s.staff,s.method,s.note].join(' ').toLowerCase().includes(q.toLowerCase()));
+  if(q===undefined) q = document.querySelector('#page-asales .sbar input')?.value || '';
+  const range = getDateRange('asales');
+  const d=DB.sales.filter(s=>
+    (!q||[s.product,s.staff,s.method,s.note,s.salesId].join(' ').toLowerCase().includes(q.toLowerCase())) &&
+    dateInRange(s.date, range.start, range.end)
+  );
   const tb=document.getElementById('as-tbody');
   if(!d.length){tb.innerHTML='<tr><td colspan="10"><div class="empty"><i class="ti ti-table"></i><p>No sales recorded yet</p></div></td></tr>';return;}
   const mBadge = m => {
@@ -1268,7 +1444,9 @@ function renderAS(q){
 
 /* ALL PRODUCTION */
 function renderAP(){
-  const d=DB.production;const tb=document.getElementById('ap-tbody');
+  const range = getDateRange('aprod');
+  const d=DB.production.filter(p=>dateInRange(p.date, range.start, range.end));
+  const tb=document.getElementById('ap-tbody');
   if(!d.length){tb.innerHTML='<tr><td colspan="9"><div class="empty"><i class="ti ti-packages"></i><p>No batches logged yet</p></div></td></tr>';return;}
   tb.innerHTML=d.slice().reverse().map(p=>`<tr>
     <td>${fmtDate(p.date)}</td>
@@ -1284,39 +1462,58 @@ function renderAP(){
 
 /* ALL EXPENSES */
 function renderAE(){
-  const d=DB.expenses;const tb=document.getElementById('ae-tbody');
+  const range = getDateRange('aexp');
+  const d=DB.expenses.filter(e=>dateInRange(e.date, range.start, range.end));
+  const tb=document.getElementById('ae-tbody');
   const BC={Operator:'bb',Fuel:'bt',Repair:'br',Driver:'ba',Maintenance:'bb','Equipment & Machinery':'bt'};
-  if(!d.length){tb.innerHTML='<tr><td colspan="8"><div class="empty"><i class="ti ti-receipt-2"></i><p>No expenses yet</p></div></td></tr>';return;}
-  tb.innerHTML=d.slice().reverse().map(e=>`<tr>
-    <td>${fmtDate(e.date)}</td>
-    <td><span class="badge ${BC[e.cat]||'bb'}">${e.cat}</span></td>
-    <td>${e.desc}</td>
-    <td style="font-weight:600">₦${e.amount.toLocaleString()}</td>
-    <td>${e.paid}</td><td>${e.staff}</td>
-    <td style="color:var(--txt3);font-size:12px">${e.note||'—'}</td>
-    <td><button class="btn btn-danger btn-sm" onclick="promptDel('expenses',${e.id})"><i class="ti ti-trash"></i></button></td>
-  </tr>`).join('');
+  if(!d.length){tb.innerHTML='<tr><td colspan="9"><div class="empty"><i class="ti ti-receipt-2"></i><p>No expenses yet</p></div></td></tr>';return;}
+  tb.innerHTML=d.slice().reverse().map(e=>{
+    const status = e.approved ? `<span class="badge bg">Approved</span>` : `<span class="badge br">Pending</span>`;
+    const action = (!e.approved && CU && (CU.role==='manager' || CU.role==='admin')) ? `<button class="btn btn-success btn-sm" onclick="approveExpense(${e.id})"><i class="ti ti-check"></i></button>` : '';
+    return `<tr>
+      <td>${fmtDate(e.date)}</td>
+      <td><span class="badge ${BC[e.cat]||'bb'}">${e.cat}</span></td>
+      <td>${e.desc}</td>
+      <td style="font-weight:600">₦${e.amount.toLocaleString()}</td>
+      <td>${e.paid}</td><td>${e.staff}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--txt3)">${status}</td>
+      <td style="color:var(--txt3);font-size:12px">${e.note||'—'}</td>
+      <td style="display:flex;gap:6px;justify-content:flex-end">${action}<button class="btn btn-danger btn-sm" onclick="promptDel('expenses',${e.id})"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+  }).join('');
 }
 
 /* DASHBOARD */
 function renderDash(){
-  const rev=DB.sales.reduce((a,s)=>a+s.amount,0);
-  const prod=DB.production.reduce((a,p)=>a+p.qty,0);
-  const sold=DB.sales.reduce((a,s)=>a+s.qty,0);
-  const exp=DB.expenses.reduce((a,e)=>a+e.amount,0);
-  const dmg=DB.sales.reduce((a,s)=>a+s.damaged,0)+DB.production.reduce((a,p)=>a+p.damaged,0);
+  const range = getDateRange('dash');
+  const filteredSales = DB.sales.filter(s=>dateInRange(s.date, range.start, range.end));
+  const filteredProd = DB.production.filter(p=>dateInRange(p.date, range.start, range.end));
+  const filteredExp = DB.expenses.filter(e=>dateInRange(e.date, range.start, range.end));
+  const filteredRaw = DB.rawMaterials.filter(r=>dateInRange(r.date, range.start, range.end));
+  const rev=filteredSales.reduce((a,s)=>a+s.amount,0);
+  const prod=filteredProd.reduce((a,p)=>a+p.qty,0);
+  const sold=filteredSales.reduce((a,s)=>a+s.qty,0);
+  const exp=filteredExp.reduce((a,e)=>a+e.amount,0);
+  const rawCount=filteredRaw.length;
+  const pendingExp = filteredExp.filter(e=>!e.approved).length;
+  const rawCost=filteredRaw.reduce((a,r)=>a + (parseFloat(r.amount)||0),0);
+  const dmg=filteredSales.reduce((a,s)=>a+s.damaged,0)+filteredProd.reduce((a,p)=>a+p.damaged,0);
   const profit=rev-exp;
   document.getElementById('d-rev').textContent='₦'+rev.toLocaleString();
   document.getElementById('d-prod').textContent=prod.toLocaleString();
   document.getElementById('d-sold').textContent=sold.toLocaleString();
   document.getElementById('d-exp').textContent='₦'+exp.toLocaleString();
+  document.getElementById('d-raw-count').textContent=rawCount.toLocaleString();
+  document.getElementById('d-raw-cost').textContent='₦'+rawCost.toLocaleString();
+  const pendingEl = document.getElementById('d-pending-exp');
+  if(pendingEl) pendingEl.textContent = pendingExp.toLocaleString();
   document.getElementById('d-dmg').textContent=dmg.toLocaleString();
   document.getElementById('d-profit').textContent=(profit>=0?'₦':'-₦')+Math.abs(profit).toLocaleString();
   document.querySelector('#page-dash .mc:last-child').className='mc '+(profit>=0?'g':'r');
 
-  const cash=DB.sales.filter(s=>s.method==='CASH').reduce((a,s)=>a+s.amount,0);
-  const xfer=DB.sales.filter(s=>s.method==='TRANSFER').reduce((a,s)=>a+s.amount,0);
-  const pos=DB.sales.filter(s=>s.method==='POS').reduce((a,s)=>a+s.amount,0);
+  const cash=filteredSales.filter(s=>s.method==='CASH').reduce((a,s)=>a+s.amount,0);
+  const xfer=filteredSales.filter(s=>s.method==='TRANSFER').reduce((a,s)=>a+s.amount,0);
+  const pos=filteredSales.filter(s=>s.method==='POS').reduce((a,s)=>a+s.amount,0);
   if(chPay)chPay.destroy();
   chPay=new Chart(document.getElementById('ch-pay'),{
     type:'doughnut',
@@ -1324,7 +1521,7 @@ function renderDash(){
     options:{responsive:true,maintainAspectRatio:false,cutout:'64%',plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'DM Sans'},boxWidth:10,padding:12,color:'#546050'}}}}
   });
 
-  const cats={};DB.expenses.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amount;});
+  const cats={};filteredExp.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amount;});
   const CC={Operator:'#7F77DD',Fuel:'#1D9E75',Repair:'#c03838',Driver:'#c08a18',Maintenance:'#2d58c2','Equipment & Machinery':'#888',Miscellaneous:'#96a48e'};
   if(chExp)chExp.destroy();
   chExp=new Chart(document.getElementById('ch-exp'),{
