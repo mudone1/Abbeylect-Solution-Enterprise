@@ -552,7 +552,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="fg">
                 <div class="field"><label>Date</label><input type="date" id="rm-date"></div>
                 <div class="field"><label>Category</label>
-                  <select id="rm-cat"><option>Packing</option><option>Film</option><option>Labels</option><option>Cap</option><option>Other</option></select>
+                  <select id="rm-cat"><option>PRINTED ROLL</option><option>PACKING BAG</option></select>
                 </div>
                 <div class="field"><label>No. Roll per PK</label><input type="number" id="rm-rolls-pk" min="0" value="0" oninput="calcRMTotals()"></div>
                 <div class="field"><label>Unit cost (₦ per KG)</label><input type="number" id="rm-unit-cost" min="0" value="0" oninput="calcRMTotals()"></div>
@@ -1123,8 +1123,10 @@ function clearProd(){['p-batch','p-qty','p-note'].forEach(id=>document.getElemen
 function generateBatchCode(){
   const date = document.getElementById('p-date') && document.getElementById('p-date').value ? document.getElementById('p-date').value : TODAY;
   const ymd = date.replace(/-/g,'');
-  const rand = Math.floor(Math.random()*9000)+1000;
-  const code = `PB${ymd}-${rand}`;
+  // sequence = number of batches already logged for this date + 1
+  const count = DB.production.filter(p=>p.date===date).length;
+  const seq = String(count+1).padStart(2,'0');
+  const code = `PB${ymd}-${seq}`;
   const el = document.getElementById('p-batch'); if(el) el.value = code;
 }
 
@@ -1149,7 +1151,7 @@ function addFigRow(val){
 
 function clearRawMaterialForm(){
   document.getElementById('rm-date').value='';
-  document.getElementById('rm-cat').value='Packing';
+  document.getElementById('rm-cat').value='PACKING BAG';
   document.getElementById('rm-rolls-pk').value='0';
   document.getElementById('rm-unit-cost').value='0';
   document.getElementById('rm-qty-kg').value='';
