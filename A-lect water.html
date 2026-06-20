@@ -388,6 +388,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <div class="sb-sec">My work</div>
       <button class="nav-item active" onclick="goPage('sale',this)" id="nav-sale"><i class="ti ti-shopping-cart"></i> Record sale</button>
       <button class="nav-item" onclick="goPage('prod',this)" id="nav-prod"><i class="ti ti-packages"></i> Log production</button>
+      <button class="nav-item" onclick="goPage('stock',this)" id="nav-stock"><i class="ti ti-box-seam"></i> Log raw materials stock-in</button>
       <button class="nav-item" onclick="goPage('exp',this)" id="nav-exp"><i class="ti ti-receipt-2"></i> Log expense</button>
       <button class="nav-item" onclick="goPage('mysales',this)" id="nav-mysales"><i class="ti ti-clock-hour-4"></i> My sales</button>
 
@@ -533,20 +534,25 @@ table.dt tbody tr:hover td{background:var(--surf2);}
         <div class="ph"><div><div class="ph-title">Log production</div><div class="ph-sub">Record today's production batch</div></div></div>
         <div class="pos">
           <div class="pos-card">
-            <div class="pos-head"><div class="pos-head-ico"><i class="ti ti-packages"></i></div><div><h2>New batch entry</h2><p>Log quantities and any wastage</p></div></div>
+            <div class="pos-head"><div class="pos-head-ico"><i class="ti ti-packages"></i></div><div><h2>New batch entry</h2><p>Record materials used and production cost</p></div></div>
             <div class="pos-body">
               <div class="ok" id="prod-ok"><i class="ti ti-circle-check"></i> Batch logged!</div>
               <div class="fg">
-                <div class="field"><label>Date</label><input type="date" id="p-date"></div>
-                <div class="field"><label>Batch ID</label><input type="text" id="p-batch" placeholder="e.g. A0022" style="font-family:'DM Mono',monospace"></div>
-                <div class="field"><label>Material utilized</label>
-                  <select id="p-mat"><option value="A0001">A0001 — Printed roll</option><option value="A0002">A0002 — Packing bag</option></select>
-                </div>
+                <div class="field"><label>Date</label><input type="date" id="p-date" onchange="updateBatchCode()"></div>
+                <div class="field"><label>Batch code</label><input type="text" id="p-batch" placeholder="PB000000-0001" style="font-family:'DM Mono',monospace" readonly></div>
                 <div class="field"><label>Product type</label>
                   <select id="p-type"><option>Pure water 50L</option><option>Dispenser water</option><option>Bottle water 50CL</option></select>
                 </div>
-                <div class="field"><label>Qty produced (bags)</label><input type="number" id="p-qty" placeholder="e.g. 400" min="1"></div>
-                <div class="field"><label>Damaged during production</label><input type="number" id="p-dmg" value="0" min="0"></div>
+                <div class="field"><label>Qty produced (bags)</label><input type="number" id="p-qty" placeholder="e.g. 400" min="1" onchange="recalcProdTotals()" oninput="recalcProdTotals()"></div>
+                <div class="field full"><label>Material utilization</label>
+                  <div class="mat-head">
+                    <span>Raw material</span><span>Roll / pack</span><span>Roll intake</span><span>Qty KG</span><span>Unit cost</span><span>Amount</span><span>ID</span><span></span>
+                  </div>
+                  <div id="p-mat-rows"></div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="addMatRow()">+ Add raw material</button>
+                </div>
+                <div class="field"><label>Total material cost (₦)</label><input type="text" id="p-total-material-cost" readonly></div>
+                <div class="field"><label>Production cost per KG (₦)</label><input type="text" id="p-cost-per-kg" readonly></div>
                 <div class="field full"><label>Notes</label><input type="text" id="p-note" placeholder="Operator notes, machine status…"></div>
               </div>
               <div class="f-actions">
@@ -560,9 +566,57 @@ table.dt tbody tr:hover td{background:var(--surf2);}
             <div class="r-body">
               <div class="srow"><span class="sl">Batches logged</span><span class="sv" id="p-count">0</span></div>
               <div class="srow"><span class="sl">Total bags produced</span><span class="sv" id="p-total">0</span></div>
-              <div class="srow"><span class="sl">Total damaged</span><span class="sv" style="color:var(--red)" id="p-tdmg">0</span></div>
+              <div class="srow"><span class="sl">Total raw material cost</span><span class="sv" id="p-material-total">₦0</span></div>
+              <div class="srow"><span class="sl">Cost per KG</span><span class="sv" id="p-cost-total">₦0</span></div>
             </div>
             <div class="r-lock" style="margin:0 1.2rem 1.2rem"><i class="ti ti-lock" style="font-size:11px"></i> Inventory totals visible to admin only</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOG RAW MATERIALS STOCK-IN -->
+      <div class="page" id="page-stock">
+        <div class="ph"><div><div class="ph-title">Log raw materials stock-in</div><div class="ph-sub">Add new material lots and update inventory</div></div></div>
+        <div class="pos">
+          <div class="pos-card">
+            <div class="pos-head"><div class="pos-head-ico"><i class="ti ti-package"></i></div><div><h2>New stock entry</h2><p>Track incoming sachet and packing materials</p></div></div>
+            <div class="pos-body">
+              <div class="ok" id="stock-ok"><i class="ti ti-circle-check"></i> Stock-in recorded!</div>
+              <div class="fg">
+                <div class="field"><label>Date</label><input type="date" id="st-date"></div>
+                <div class="field"><label>Category</label>
+                  <select id="st-cat" onchange="updateStockSubcategory()">
+                    <option value="Sachet Bag">Sachet Bag</option>
+                    <option value="Packing Bag">Packing Bag</option>
+                  </select>
+                </div>
+                <div class="field"><label>Subcategory</label>
+                  <select id="st-sub">
+                    <option value="Printed Rolls">Printed Rolls</option>
+                    <option value="Plain Rolls">Plain Rolls</option>
+                  </select>
+                </div>
+                <div class="field"><label>Quantity of rolls</label><input type="number" id="st-rolls" placeholder="e.g. 20" min="1"></div>
+                <div class="field"><label>Unit cost (₦)</label><input type="number" id="st-unit" placeholder="e.g. 500" min="0"></div>
+                <div class="field full"><label>Supplier (optional)</label><input type="text" id="st-supplier" placeholder="Supplier name"></div>
+                <div class="field full"><label>Notes (optional)</label><input type="text" id="st-note" placeholder="Batch number, delivery note…"></div>
+              </div>
+              <div class="f-actions">
+                <button class="btn btn-primary" onclick="submitStock()"><i class="ti ti-check"></i> Save stock-in</button>
+                <button class="btn btn-outline" onclick="clearStock()"><i class="ti ti-refresh"></i> Clear</button>
+              </div>
+              <div class="field full"><label>Generated stock ID</label><input type="text" id="st-code" readonly></div>
+            </div>
+          </div>
+          <div class="receipt">
+            <div class="r-head"><h3><i class="ti ti-stack" style="color:#4d9aff"></i> Inventory summary</h3></div>
+            <div class="r-body" id="inv-summary">
+              <div class="srow"><span class="sl">Printed rolls</span><span class="sv" id="inv-printed">0 rolls</span></div>
+              <div class="srow"><span class="sl">Plain rolls</span><span class="sv" id="inv-plain">0 rolls</span></div>
+              <div class="srow"><span class="sl">Packing bags</span><span class="sv" id="inv-packing">0 bags</span></div>
+              <div class="srow"><span class="sl">Inventory value</span><span class="sv" id="inv-value">₦0</span></div>
+            </div>
+            <div class="r-lock" style="margin:0 1.2rem 1.2rem"><i class="ti ti-lock" style="font-size:11px"></i> Stock balances visible to admin only</div>
           </div>
         </div>
       </div>
@@ -755,9 +809,11 @@ const DB={
     {id:2,name:'Owner',username:'admin',password:'admin99',role:'admin',active:true},
     {id:3,name:'Manager',username:'manager',password:'mgr456',role:'manager',active:true},
   ],
-  sales:[],production:[],expenses:[],
+  sales:[],production:[],expenses:[],stockIns:[],
   _id:100,nid(){return++this._id;}
 };
+const FILTERS={dash:'today',asales:'today',aprod:'today',aexp:'today'};
+const CUSTOM_FILTER={asales:{from:'',to:''},aprod:{from:'',to:''},aexp:{from:'',to:''},dash:{from:'',to:''}};
 let CU=null,delT={t:null,id:null},sM='CASH',chPay=null,chExp=null;
 
 /* AUTH */
@@ -806,7 +862,7 @@ function goPage(name,btn){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
-  const map={mysales:renderMySales,dash:renderDash,asales:()=>renderAS(''),aprod:renderAP,aexp:renderAE,users:renderUsers};
+  const map={mysales:renderMySales,dash:renderDash,asales:()=>renderAS(''),aprod:renderAP,aexp:renderAE,stock:renderStock,users:renderUsers};
   if(map[name])map[name]();
   closeSidebar();
 }
@@ -814,7 +870,7 @@ function goPage(name,btn){
 function setDates(){
   const t=new Date().toISOString().split('T')[0];
   // s-date handled by date button (shows Today by default)
-  ['p-date','e-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  ['p-date','e-date','st-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
 }
 
 /* SALE */
@@ -1072,20 +1128,179 @@ function clearSale(){
 function submitProd(){
   const date=document.getElementById('p-date').value;
   const batch=document.getElementById('p-batch').value.trim();
-  const mat=document.getElementById('p-mat').value;
   const type=document.getElementById('p-type').value;
   const qty=parseFloat(document.getElementById('p-qty').value);
-  const dmg=parseFloat(document.getElementById('p-dmg').value)||0;
   const note=document.getElementById('p-note').value;
-  if(!date||!batch||!qty){toast('Fill in date, batch ID and quantity','e');return;}
-  DB.production.push({id:DB.nid(),date,batch,material:mat,type,qty,damaged:dmg,note,staff:CU.name,staffId:CU.id});
-  showOk('prod-ok');clearProd();toast('Batch logged!','s');updateProdPanel();
+  if(!date||!batch||!qty){toast('Fill in date, batch code and quantity','e');return;}
+  const materials=[];
+  const rows=document.querySelectorAll('.mat-row');
+  rows.forEach(row=>{
+    const sku=row.querySelector('.mat-id').value;
+    const pack=row.querySelector('.mat-pack').value.trim();
+    const rolls=parseFloat(row.querySelector('.mat-rolls').value)||0;
+    const kg=parseFloat(row.querySelector('.mat-kg').value)||0;
+    const unit=parseFloat(row.querySelector('.mat-unit').value)||0;
+    const amount=parseFloat(row.querySelector('.mat-amount').value)||0;
+    if(sku && rolls && unit){materials.push({rawId:sku,rollPerPack:pack,rollIntake:rolls,qtyKg:kg,unitCost:unit,amount});}
+  });
+  const totalMatCost=materials.reduce((a,m)=>a+m.amount,0);
+  const totalQty=qty;
+  const costPerKg=totalQty?totalMatCost/totalQty:0;
+  DB.production.push({
+    id:DB.nid(),date,batch,type,qty,totalMaterialCost:totalMatCost,totalQuantityProduced:totalQty,productionCostPerKg:parseFloat(costPerKg.toFixed(2)),materials,note,staff:CU.name,staffId:CU.id,ts:Date.now()
+  });
+  showOk('prod-ok');clearProd();toast('Batch logged!','s');updateProdPanel();renderAP();renderDash();
 }
-function clearProd(){['p-batch','p-qty','p-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('p-dmg').value='0';setDates();}
+function clearProd(){
+  ['p-qty','p-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('p-batch').value='';
+  document.getElementById('p-total-material-cost').value='';
+  document.getElementById('p-cost-per-kg').value='';
+  document.getElementById('p-material-total').textContent='₦0';
+  document.getElementById('p-cost-total').textContent='₦0';
+  document.getElementById('p-mat-rows').innerHTML='';
+  addMatRow();
+  setDates();
+  updateBatchCode();
+}
 function updateProdPanel(){
   document.getElementById('p-count').textContent=DB.production.length;
   document.getElementById('p-total').textContent=DB.production.reduce((a,p)=>a+p.qty,0).toLocaleString();
-  document.getElementById('p-tdmg').textContent=DB.production.reduce((a,p)=>a+p.damaged,0).toLocaleString();
+  document.getElementById('p-material-total').textContent='₦'+DB.production.reduce((a,p)=>a+p.totalMaterialCost,0).toLocaleString();
+  document.getElementById('p-cost-total').textContent='₦'+(DB.production.reduce((a,p)=>a+p.productionCostPerKg,0)).toLocaleString();
+}
+function renderStock(){
+  updateStockSubcategory();
+  renderInventorySummary();
+}
+function updateStockSubcategory(){
+  const cat=document.getElementById('st-cat').value;
+  const sub=document.getElementById('st-sub');
+  sub.innerHTML='';
+  if(cat==='Sachet Bag'){
+    sub.innerHTML='<option value="Printed Rolls">Printed Rolls</option><option value="Plain Rolls">Plain Rolls</option>';
+  } else {
+    sub.innerHTML='<option value="Packing Bags">Packing Bags</option>';
+  }
+}
+function addMatRow(){
+  const container=document.getElementById('p-mat-rows');
+  if(container.children.length>=20){toast('Maximum of 20 material rows reached','e');return;}
+  const row=document.createElement('div');
+  row.className='mat-row';
+  const options=DB.stockIns.length?DB.stockIns.map(s=>`<option value="${s.code}">${s.code} — ${s.category}${s.subcategory?'/'+s.subcategory:''}</option>`).join(''):'<option value="">No stock entries</option>';
+  row.innerHTML=`
+    <select class="mat-id" onchange="updateMatRow(this)">${options}</select>
+    <input type="text" class="mat-pack" placeholder="Roll/pack" oninput="updateMatRow(this)">
+    <input type="number" class="mat-rolls" min="0" placeholder="Rolls" oninput="updateMatRow(this)">
+    <input type="number" class="mat-kg" min="0" placeholder="KG" readonly>
+    <input type="number" class="mat-unit" min="0" placeholder="Cost" oninput="updateMatRow(this)">
+    <input type="number" class="mat-amount" min="0" placeholder="Amount" readonly>
+    <button type="button" class="btn btn-outline btn-sm" onclick="removeMatRow(this)">×</button>
+  `;
+  container.appendChild(row);
+}
+function removeMatRow(button){
+  button.closest('.mat-row')?.remove();
+  recalcProdTotals();
+}
+function updateMatRow(el){
+  const row=el.closest('.mat-row');
+  if(!row) return;
+  const rolls=parseFloat(row.querySelector('.mat-rolls').value)||0;
+  const unit=parseFloat(row.querySelector('.mat-unit').value)||0;
+  const kg=rolls;
+  const amount=kg*unit;
+  row.querySelector('.mat-kg').value=kg?kg.toFixed(2):'';
+  row.querySelector('.mat-amount').value=amount?amount.toFixed(2):'';
+  recalcProdTotals();
+}
+function recalcProdTotals(){
+  const rows=document.querySelectorAll('.mat-row');
+  const totalCost=[...rows].reduce((sum,row)=>sum+(parseFloat(row.querySelector('.mat-amount').value)||0),0);
+  const qty=parseFloat(document.getElementById('p-qty').value)||0;
+  const costPerKg=qty?totalCost/qty:0;
+  document.getElementById('p-total-material-cost').value=totalCost?`₦${totalCost.toLocaleString()}`:'';
+  document.getElementById('p-cost-per-kg').value=costPerKg?`₦${costPerKg.toFixed(2)}`:'';
+}
+function genBatchCode(date){
+  const d=new Date(date || document.getElementById('p-date').value || TODAY);
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yy=String(d.getFullYear()).slice(2);
+  const dayCode=`PB${dd}${mm}${yy}`;
+  const count=DB.production.filter(p=>p.date===d.toISOString().split('T')[0]).length+1;
+  return `${dayCode}-${String(count).padStart(4,'0')}`;
+}
+function updateBatchCode(){
+  const code=document.getElementById('p-batch');
+  if(code) code.value=genBatchCode(document.getElementById('p-date').value);
+}
+function genStockCode(date){
+  const d=new Date(date || document.getElementById('st-date').value || TODAY);
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yy=String(d.getFullYear()).slice(2);
+  const dateCode=`${dd}${mm}${yy}`;
+  const count=DB.stockIns.filter(s=>s.date===d.toISOString().split('T')[0]).length+1;
+  return `ALT/${dateCode}/${String(count).padStart(3,'0')}`;
+}
+function submitStock(){
+  const date=document.getElementById('st-date').value;
+  const category=document.getElementById('st-cat').value;
+  const subcategory=document.getElementById('st-sub').value;
+  const rolls=parseFloat(document.getElementById('st-rolls').value);
+  const unit=parseFloat(document.getElementById('st-unit').value);
+  const supplier=document.getElementById('st-supplier').value.trim();
+  const note=document.getElementById('st-note').value.trim();
+  if(!date||!category||!subcategory||!rolls||!unit){toast('Fill in date, category, rolls and unit cost','e');return;}
+  const code=genStockCode(date);
+  DB.stockIns.push({id:DB.nid(),date,code,category,subcategory,rolls,unitCost:unit,supplier,note,ts:Date.now()});
+  document.getElementById('st-code').value=code;
+  showOk('stock-ok');clearStock(true);toast('Stock-in recorded!','s');renderInventorySummary();renderInventorySummary();renderStock();
+}
+function clearStock(preserveCode=false){
+  const keep=document.getElementById('st-code').value;
+  ['st-rolls','st-unit','st-supplier','st-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  setDates();
+  updateStockSubcategory();
+  if(!preserveCode) document.getElementById('st-code').value='';
+}
+function renderInventorySummary(){
+  const inventory=calculateInventory();
+  document.getElementById('inv-printed').textContent=`${inventory.printedRolls} rolls`;
+  document.getElementById('inv-plain').textContent=`${inventory.plainRolls} rolls`;
+  document.getElementById('inv-packing').textContent=`${inventory.packingBags} bags`;
+  document.getElementById('inv-value').textContent=`₦${inventory.inventoryValue.toLocaleString()}`;
+}
+function calculateInventory(){
+  const received={printed:0,plain:0,packing:0};
+  DB.stockIns.forEach(s=>{
+    if(s.category==='Sachet Bag'){
+      if(s.subcategory==='Printed Rolls') received.printed += s.rolls;
+      if(s.subcategory==='Plain Rolls') received.plain += s.rolls;
+    } else {
+      received.packing += s.rolls;
+    }
+  });
+  const used={printed:0,plain:0,packing:0};
+  DB.production.forEach(p=>{
+    p.materials?.forEach(m=>{
+      const stock=DB.stockIns.find(s=>s.code===m.rawId);
+      if(!stock) return;
+      if(stock.category==='Sachet Bag'){
+        if(stock.subcategory==='Printed Rolls') used.printed += m.rollIntake;
+        if(stock.subcategory==='Plain Rolls') used.plain += m.rollIntake;
+      } else {
+        used.packing += m.rollIntake;
+      }
+    });
+  });
+  const printed= Math.max(0,received.printed-used.printed);
+  const plain= Math.max(0,received.plain-used.plain);
+  const packing=Math.max(0,received.packing-used.packing);
+  const inventoryValue=DB.stockIns.reduce((sum,s)=>sum+s.rolls*s.unitCost,0) - DB.production.reduce((sum,p)=>sum+p.totalMaterialCost,0);
+  return {printedRolls:printed,plainRolls:plain,packingBags:packing,inventoryValue:Math.max(0,inventoryValue)};
 }
 
 /* EXPENSE */
