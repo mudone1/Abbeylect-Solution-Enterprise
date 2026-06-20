@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.1/JsBarcode.all.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -299,6 +300,42 @@ table.dt tbody tr:hover td{background:var(--surf2);}
 .ct-row .cv{font-weight:600;font-family:'DM Mono',monospace;}
 .ct-row .cv.pos{color:#4d9aff;}
 .ct-row .cv.neg{color:#f07070;}
+
+/* RECENT SALES (record-sale page) */
+.rs-head{padding:.9rem 1.2rem;display:flex;gap:9px;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--brd);flex-wrap:wrap;}
+.rs-head .card-title{margin:0;}
+
+/* TEXT / CANCEL BUTTON */
+.btn-text{background:none;border:none;color:var(--txt3);font-size:12.5px;padding:7px;cursor:pointer;width:100%;text-align:center;font-family:'DM Sans',sans-serif;}
+.btn-text:hover{color:var(--txt2);text-decoration:underline;}
+
+/* PRINTABLE RECEIPT (hidden on screen, shown only when printing) */
+#print-receipt-root{display:none;}
+.rcpt{width:72mm;padding:6px 8px;font-family:'DM Mono',monospace;color:#000;font-size:11px;line-height:1.55;background:#fff;}
+.rcpt-center{text-align:center;}
+.rcpt-logo{width:38px;height:38px;border-radius:8px;display:block;margin:0 auto 4px;object-fit:contain;}
+.rcpt-name{font-size:14px;font-weight:700;letter-spacing:.03em;}
+.rcpt-sub{font-size:9px;margin-top:1px;}
+.rcpt-addr{font-size:9px;margin-top:3px;line-height:1.5;}
+.rcpt-divider{border-top:1px dashed #000;margin:7px 0;}
+.rcpt-meta div{display:flex;justify-content:space-between;gap:8px;font-size:10px;padding:1px 0;}
+.rcpt-table{width:100%;border-collapse:collapse;font-size:10.5px;margin:4px 0;}
+.rcpt-table th{text-align:left;font-size:9px;border-bottom:1px dashed #000;padding:3px 0;}
+.rcpt-table th.amt,.rcpt-table td.amt{text-align:right;}
+.rcpt-table td{padding:3px 0;vertical-align:top;}
+.rcpt-amt-big{text-align:center;font-size:17px;font-weight:700;margin:6px 0 2px;}
+.rcpt-totals div{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;padding:2px 0;}
+.rcpt-totals .grand{font-weight:700;font-size:12px;border-top:1px dashed #000;margin-top:4px;padding-top:5px;}
+.rcpt-barcode{text-align:center;margin-top:8px;}
+.rcpt-barcode svg{max-width:100%;}
+.rcpt-footer{text-align:center;font-size:9px;margin-top:8px;line-height:1.6;}
+
+@media print{
+  body *{visibility:hidden;}
+  #print-receipt-root,#print-receipt-root *{visibility:visible;}
+  #print-receipt-root{display:block;position:absolute;top:0;left:0;width:72mm;}
+  @page{margin:0;size:72mm auto;}
+}
 </style>
 </head>
 <body>
@@ -308,7 +345,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
   <div class="lw">
     <div class="ll">
       <div class="ll-brand">
-        <img class="brand-logo" src="spring-xcel-water-logo.png" alt="Spring XCEL Water logo">
+        <img class="brand-logo" src="A-lect water.png" alt="A-lect Water logo">
         <div><div class="ll-bname">Spring XCEL Water</div><div class="ll-bsub">Operations Portal</div></div>
       </div>
       <div class="ll-hero">
@@ -334,7 +371,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
   <div class="topbar">
     <div class="tb-left">
       <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Toggle menu"><i class="ti ti-menu-2"></i></button>
-      <img class="brand-logo" src="spring-xcel-water-logo.png" alt="Spring XCEL Water logo">
+      <img class="brand-logo" src="A-lect water.png" alt="A-lect Water logo">
       <span class="tb-title">Spring XCEL Water</span>
     </div>
     <div class="tb-right">
@@ -473,6 +510,21 @@ table.dt tbody tr:hover td{background:var(--surf2);}
 
             <div class="r-lock"><i class="ti ti-lock" style="font-size:11px"></i> Revenue figures are admin-only</div>
           </div>
+        </div>
+
+        <!-- RECENT SALES -->
+        <div class="card" style="padding:0;overflow:hidden;margin-top:1.5rem">
+          <div class="rs-head">
+            <div class="card-title"><i class="ti ti-history"></i> Recent sales</div>
+            <div class="sbar" style="max-width:260px">
+              <i class="ti ti-search"></i>
+              <input type="text" placeholder="Search sale ID, product, method…" oninput="renderRecentSales(this.value)">
+            </div>
+          </div>
+          <div class="tw"><table class="dt">
+            <thead><tr><th></th><th>Sale ID</th><th>Date</th><th>Product</th><th>Qty</th><th>Amount</th><th>Method</th></tr></thead>
+            <tbody id="recent-sales-tbody"><tr><td colspan="7"><div class="empty"><i class="ti ti-receipt"></i><p>No sales recorded yet this session</p></div></td></tr></tbody>
+          </table></div>
         </div>
       </div>
 
@@ -677,6 +729,23 @@ table.dt tbody tr:hover td{background:var(--surf2);}
     </div>
   </div>
 </div>
+
+<!-- CONFIRM SALE MODAL -->
+<div class="mo" id="confirm-sale-mo">
+  <div class="modal">
+    <div class="modal-hd"><span>Confirm this sale?</span><button class="modal-x" onclick="cancelSaleConfirm()"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:1.4rem;line-height:1.65" id="confirm-sale-msg"></p>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <button class="btn btn-primary btn-full" onclick="finalizeSale(false)"><i class="ti ti-check"></i> Confirm &amp; save</button>
+      <button class="btn btn-outline btn-full" onclick="finalizeSale(true)"><i class="ti ti-printer"></i> Save &amp; print receipt</button>
+      <button class="btn-text" onclick="cancelSaleConfirm()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINTABLE RECEIPT (only visible to the printer) -->
+<div id="print-receipt-root"></div>
+
 <div id="toast"></div>
 
 <script>
@@ -709,7 +778,7 @@ function doLogin(){
   setDates();
   if(user.role!=='staff')document.querySelectorAll('.admin-nav').forEach(el=>el.style.display='');
   goPage('sale',document.getElementById('nav-sale'));
-  updateExpPanel();updateProdPanel();
+  updateExpPanel();updateProdPanel();renderRecentSales();
 }
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('lu').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
@@ -850,6 +919,8 @@ function updateR(){
   document.getElementById('r-date').textContent = (!dateVal||dateVal===TODAY) ? 'Today' : document.getElementById('s-date-label').textContent;
 }
 
+let pendingSale=null;
+
 function submitSale(){
   const dateVal = document.getElementById('s-date').value;
   const date    = dateVal || TODAY;
@@ -867,14 +938,110 @@ function submitSale(){
   const change   = hasCash ? (parseFloat(document.getElementById('s-change').value)||0) : 0;
   const cashSplit= isSplit ? (parseFloat(document.getElementById('s-cash-split').value)||0) : 0;
   const otherSplit=isSplit ? (parseFloat(document.getElementById('s-other-split').value)||0) : 0;
+  const amount = qty*price;
 
-  DB.sales.push({
-    id:DB.nid(), date, product, qty, price, damaged:dmg, method:sM,
-    note, staff:CU.name, staffId:CU.id, amount:qty*price,
+  pendingSale = {
+    date, product, qty, price, damaged:dmg, method:sM,
+    note, staff:CU.name, staffId:CU.id, amount,
     cashReceived:received, changeGiven:change, netCash:received-change,
     cashSplit, otherSplit
-  });
+  };
+
+  document.getElementById('confirm-sale-msg').innerHTML =
+    `You're about to record <strong>${qty} ${qty===1?'bag':'bags'}</strong> of <strong>${product}</strong> `+
+    `for a total of <strong>\u20a6${amount.toLocaleString()}</strong> via <strong>${sM.replace('_',' + ')}</strong>. `+
+    `Choose how you'd like to proceed.`;
+  document.getElementById('confirm-sale-mo').classList.add('open');
+}
+
+function cancelSaleConfirm(){
+  pendingSale=null;
+  document.getElementById('confirm-sale-mo').classList.remove('open');
+}
+
+function genSaleId(id){
+  const d=new Date();
+  const ymd=String(d.getFullYear()).slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  return 'ALW-'+ymd+'-'+String(id).padStart(4,'0');
+}
+
+function finalizeSale(doPrint){
+  if(!pendingSale)return;
+  const id=DB.nid();
+  const sale={...pendingSale, id, saleId:genSaleId(id), ts:Date.now()};
+  DB.sales.push(sale);
+  document.getElementById('confirm-sale-mo').classList.remove('open');
   showOk('sale-ok'); clearSale(); toast('Sale recorded!','s');
+  renderRecentSales();
+  if(doPrint) printReceipt(sale);
+  pendingSale=null;
+}
+
+function reprintSale(id){
+  const sale=DB.sales.find(s=>s.id===id);
+  if(sale) printReceipt(sale);
+}
+
+function printReceipt(sale){
+  if(!sale)return;
+  const dt=new Date(sale.ts||Date.now());
+  const dateStr=dt.toLocaleDateString('en-GB');
+  const timeStr=dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const logoUrl=new URL('A-lect water.png',document.baseURI).href;
+  const isSplit=sale.method==='SPLIT_CT'||sale.method==='SPLIT_CP';
+  const hasCash=sale.method==='CASH'||isSplit;
+
+  let extraRows='';
+  if(isSplit){
+    const otherLbl=sale.method==='SPLIT_CT'?'Transfer':'POS';
+    extraRows+=`<div><span>&nbsp;&nbsp;\u21b3 Cash</span><span>\u20a6${sale.cashSplit.toLocaleString()}</span></div>`;
+    extraRows+=`<div><span>&nbsp;&nbsp;\u21b3 ${otherLbl}</span><span>\u20a6${sale.otherSplit.toLocaleString()}</span></div>`;
+  }
+  if(hasCash){
+    extraRows+=`<div><span>Cash received</span><span>\u20a6${sale.cashReceived.toLocaleString()}</span></div>`;
+    extraRows+=`<div><span>Change given</span><span>\u20a6${sale.changeGiven.toLocaleString()}</span></div>`;
+  }
+
+  document.getElementById('print-receipt-root').innerHTML = `
+    <div class="rcpt">
+      <div class="rcpt-center">
+        <img class="rcpt-logo" src="${logoUrl}" alt="A-lect Water logo">
+        <div class="rcpt-name">A-LECT WATER</div>
+        <div class="rcpt-sub">Pure &amp; Sachet Water Supplies</div>
+        <div class="rcpt-addr">Spring XCEL Water Plant<br>Abuja, FCT, Nigeria</div>
+      </div>
+      <div class="rcpt-divider"></div>
+      <div class="rcpt-meta">
+        <div><span>${dateStr}</span><span>${timeStr}</span></div>
+        <div><span>Sale ID</span><span>${sale.saleId}</span></div>
+        <div><span>Served by</span><span>${sale.staff}</span></div>
+        <div><span>Payment</span><span>${sale.method.replace('_',' + ')}</span></div>
+      </div>
+      <div class="rcpt-divider"></div>
+      <table class="rcpt-table">
+        <thead><tr><th>QTY</th><th>DESC</th><th class="amt">AMT</th></tr></thead>
+        <tbody>
+          <tr><td>${sale.qty}</td><td>${sale.product}</td><td class="amt">\u20a6${sale.amount.toLocaleString()}</td></tr>
+          ${sale.damaged>0?`<tr><td colspan="3" style="font-size:9px;padding-top:2px">(${sale.damaged} unit${sale.damaged>1?'s':''} damaged/returned)</td></tr>`:''}
+        </tbody>
+      </table>
+      <div class="rcpt-amt-big">AMT \u20a6${sale.amount.toLocaleString()}</div>
+      <div class="rcpt-totals">
+        <div><span>SUBTOTAL</span><span>\u20a6${sale.amount.toLocaleString()}</span></div>
+        <div><span>TAX</span><span>\u20a60</span></div>
+        ${extraRows}
+        <div class="grand"><span>BALANCE</span><span>\u20a6${sale.amount.toLocaleString()}</span></div>
+      </div>
+      ${sale.note?`<div class="rcpt-divider"></div><div style="font-size:9px">Note: ${sale.note}</div>`:''}
+      <div class="rcpt-barcode"><svg id="rcpt-barcode-svg"></svg></div>
+      <div class="rcpt-footer">Thank you for your patronage!<br>Keep this receipt for your records.</div>
+    </div>`;
+
+  if(window.JsBarcode){
+    JsBarcode('#rcpt-barcode-svg', sale.saleId, {format:'CODE128',displayValue:true,fontSize:10,height:34,width:1.3,margin:0});
+  }
+
+  setTimeout(()=>window.print(), 120);
 }
 
 function clearSale(){
@@ -961,6 +1128,29 @@ function renderMySales(){
     <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
     <td>${s.damaged>0?`<span style="color:var(--red);font-weight:500">${s.damaged}</span>`:'—'}</td>
     <td><span class="badge ${s.method==='CASH'?'bg':s.method==='TRANSFER'?'bb':s.method==='POS'?'bt':'ba'}">${s.method}</span></td>
+  </tr>`).join('');
+}
+
+/* RECENT SALES (on the Record Sale page itself) */
+function renderRecentSales(q){
+  if(!CU)return;
+  const tb=document.getElementById('recent-sales-tbody');
+  if(!tb)return;
+  q=(q||'').trim().toLowerCase();
+  const d=DB.sales.filter(s=>s.staffId===CU.id &&
+    (!q || [s.saleId,s.product,s.method,s.note].join(' ').toLowerCase().includes(q)));
+  if(!d.length){
+    tb.innerHTML=`<tr><td colspan="7"><div class="empty"><i class="ti ti-receipt"></i><p>${q?'No matching sales found':'No sales recorded yet this session'}</p></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML=d.slice().reverse().map(s=>`<tr>
+    <td><button class="btn btn-outline btn-sm" onclick="reprintSale(${s.id})" title="Print receipt"><i class="ti ti-printer"></i></button></td>
+    <td style="font-family:'DM Mono',monospace;font-size:11.5px;color:var(--txt3)">${s.saleId}</td>
+    <td>${fmtDate(s.date)}</td>
+    <td>${s.product}</td>
+    <td>${s.qty}</td>
+    <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
+    <td><span class="badge ${s.method==='CASH'?'bg':s.method==='TRANSFER'?'bb':s.method==='POS'?'bt':'ba'}">${s.method.replace('_',' + ')}</span></td>
   </tr>`).join('');
 }
 
