@@ -127,6 +127,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font
 
 /* METRICS */
 .mrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px;margin-bottom:1.5rem;}
+.dr-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1.1rem;background:var(--surf2);border:1.5px solid var(--brd);border-radius:var(--r);padding:.7rem .9rem;}
+.dr-bar label{font-size:11px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:.03em;}
+.dr-bar input[type="date"]{border:1.5px solid var(--brd);border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--surf);color:var(--txt);}
+.dr-presets{display:flex;gap:5px;flex-wrap:wrap;}
+.dr-preset-btn{border:1.5px solid var(--brd);background:var(--surf);color:var(--txt2);font-size:11px;font-weight:500;padding:5px 9px;border-radius:7px;cursor:pointer;transition:all .12s;}
+.dr-preset-btn:hover{border-color:#4d9aff;color:#4d9aff;}
+.dr-preset-btn.sel{background:#4d9aff;border-color:#4d9aff;color:#fff;}
+.dr-label{font-size:11.5px;color:var(--txt3);margin-left:auto;}
 .mc{background:var(--surf);border:1.5px solid var(--brd);border-radius:var(--r-lg);padding:1rem 1.2rem;position:relative;overflow:hidden;}
 .mc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-lg) var(--r-lg) 0 0;}
 .mc.g::before{background:linear-gradient(90deg,#1040a0,#1a5fcb);}
@@ -487,6 +495,15 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="ok" id="sale-ok"><i class="ti ti-circle-check"></i> Sale recorded successfully!</div>
               <div class="fg">
 
+                <!-- SALE TYPE -->
+                <div class="field full">
+                  <label>Sale type</label>
+                  <div class="mpills" id="stype-pills">
+                    <button class="mpill sel" onclick="selSaleType('walkin',this)"><i class="ti ti-building-store"></i> Walk-in (Factory)</button>
+                    <button class="mpill" onclick="selSaleType('supply',this)"><i class="ti ti-truck-delivery"></i> Driver (Supply)</button>
+                  </div>
+                </div>
+
                 <!-- DATE BUTTON -->
                 <div class="field full">
                   <label>Date</label>
@@ -498,6 +515,8 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                   </button>
                 </div>
 
+                <!-- WALK-IN (FACTORY) FIELDS -->
+                <div id="walkin-fields" style="display:contents">
                 <div class="field">
                   <label>Product</label>
                   <select id="s-product" onchange="updateR()">
@@ -505,7 +524,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                   </select>
                 </div>
                 <div class="field"><label>Quantity (bags)</label><input type="number" id="s-qty" placeholder="e.g. 50" min="1" oninput="updateR()"></div>
-                <div class="field"><label>Unit price (₦)</label><input type="number" id="s-price" placeholder="e.g. 210" min="0" oninput="updateR()"></div>
+                <div class="field"><label>Price per bag (₦)</label><input type="number" id="s-price" placeholder="e.g. 210" min="0" oninput="updateR()"></div>
                 <div class="field"><label>Damaged / returned</label><input type="number" id="s-dmg" value="0" min="0" oninput="updateR()"></div>
 
                 <!-- PAYMENT METHOD -->
@@ -547,6 +566,51 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 </div>
 
                 <div class="field full"><label>Note (optional)</label><input type="text" id="s-note" placeholder="Customer name, delivery details…"></div>
+                </div>
+
+                <!-- DRIVER (SUPPLY) FIELDS — stock movement only, no money amount -->
+                <div id="supply-fields" style="display:none">
+                <div class="field">
+                  <label>Driver name</label>
+                  <input type="text" id="sp-driver" placeholder="e.g. Musa">
+                </div>
+                <div class="field">
+                  <label>Product</label>
+                  <select id="sp-product">
+                    <option>Pure water 50L</option><option>Dispenser water</option><option>Bottle water 50CL</option>
+                  </select>
+                </div>
+                <div class="field"><label>Qty of bags carried</label><input type="number" id="sp-carried" placeholder="e.g. 100" min="0" oninput="updateR()"></div>
+                <div class="field"><label>Qty sold</label><input type="number" id="sp-sold" placeholder="e.g. 92" min="0" oninput="updateR()"></div>
+                <div class="field"><label>Price per bag (₦)</label><input type="number" id="sp-price" placeholder="e.g. 210" min="0" oninput="updateR()"></div>
+                <div class="field"><label>Qty leakage</label><input type="number" id="sp-leak" value="0" min="0" oninput="updateR()"></div>
+                <div class="field"><label>Qty leakage exchanged</label><input type="number" id="sp-leak-ex" value="0" min="0" oninput="updateR()"></div>
+                <div class="field"><label>Extra packing bags (packs)</label><input type="number" id="sp-extra" value="0" min="0" oninput="updateR()"></div>
+
+                <!-- PAYMENT METHOD (Driver/Supply) -->
+                <div class="field full">
+                  <label>Payment method</label>
+                  <div class="mpills" id="mpills-sp">
+                    <button class="mpill sel" onclick="selMSp('CASH',this)"><i class="ti ti-cash"></i> Cash</button>
+                    <button class="mpill" onclick="selMSp('TRANSFER',this)"><i class="ti ti-building-bank"></i> Transfer</button>
+                    <button class="mpill" onclick="selMSp('POS',this)"><i class="ti ti-credit-card"></i> POS</button>
+                    <button class="mpill" onclick="selMSp('SPLIT_CT',this)"><i class="ti ti-layout-columns"></i> Cash+Transfer</button>
+                    <button class="mpill" onclick="selMSp('SPLIT_CP',this)"><i class="ti ti-layout-columns"></i> Cash+POS</button>
+                  </div>
+                </div>
+                <div class="split-fields hidden full" id="split-fields-sp">
+                  <div class="split-label" id="split-lbl-sp">Split amounts</div>
+                  <div class="field" style="margin:0">
+                    <label>Cash portion (₦)</label>
+                    <input type="number" id="sp-cash-split" placeholder="0" min="0" oninput="updateR()">
+                  </div>
+                  <div class="field" style="margin:0">
+                    <label id="split-other-lbl-sp">Transfer portion (₦)</label>
+                    <input type="number" id="sp-other-split" placeholder="0" min="0" oninput="updateR()">
+                  </div>
+                </div>
+                <div class="field full"><label>Note (optional)</label><input type="text" id="sp-note" placeholder="Route, vehicle, comments…"></div>
+                </div>
               </div>
               <div class="f-actions">
                 <button class="btn btn-primary" onclick="submitSale()"><i class="ti ti-check"></i> Confirm sale</button>
@@ -557,8 +621,8 @@ table.dt tbody tr:hover td{background:var(--surf2);}
 
           <!-- RECEIPT PANEL -->
           <div class="receipt">
-            <div class="r-head"><h3><i class="ti ti-receipt" style="color:#4d9aff"></i> Sale receipt</h3><span id="r-date">Today</span></div>
-            <div class="r-body">
+            <div class="r-head"><h3><i class="ti ti-receipt" style="color:#4d9aff"></i> <span id="r-head-title">Sale receipt</span></h3><span id="r-date">Today</span></div>
+            <div class="r-body" id="r-body-walkin">
               <div class="r-row"><span class="rl">Product</span><span class="rv" id="r-prod">—</span></div>
               <div class="r-row"><span class="rl">Quantity</span><span class="rv" id="r-qty">—</span></div>
               <div class="r-row"><span class="rl">Unit price</span><span class="rv" id="r-price">₦—</span></div>
@@ -567,7 +631,21 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="r-row" id="r-split-cash-row" style="display:none"><span class="rl">&nbsp;&nbsp;↳ Cash</span><span class="rv" id="r-split-cash">₦0</span></div>
               <div class="r-row" id="r-split-other-row" style="display:none"><span class="rl" id="r-split-other-lbl">&nbsp;&nbsp;↳ Transfer</span><span class="rv" id="r-split-other">₦0</span></div>
             </div>
-            <div class="r-total"><span class="rtl">Sale total</span><span class="rtv" id="r-total">₦0</span></div>
+            <div class="r-body" id="r-body-supply" style="display:none">
+              <div class="r-row"><span class="rl">Driver</span><span class="rv" id="rs-driver">—</span></div>
+              <div class="r-row"><span class="rl">Product</span><span class="rv" id="rs-prod">—</span></div>
+              <div class="r-row"><span class="rl">Bags carried</span><span class="rv" id="rs-carried">0</span></div>
+              <div class="r-row"><span class="rl">Bags sold</span><span class="rv" id="rs-sold">0</span></div>
+              <div class="r-row"><span class="rl">Unit price</span><span class="rv" id="rs-price">₦—</span></div>
+              <div class="r-row"><span class="rl">Leakage</span><span class="rv" id="rs-leak" style="color:var(--red)">0</span></div>
+              <div class="r-row"><span class="rl">Leakage exchanged</span><span class="rv" id="rs-leak-ex">0</span></div>
+              <div class="r-row"><span class="rl">Extra packing bags (packs)</span><span class="rv" id="rs-extra">0</span></div>
+              <div class="r-row"><span class="rl">Outstanding bags</span><span class="rv" id="rs-outstanding">0</span></div>
+              <div class="r-row"><span class="rl">Method</span><span class="rv" id="rs-method">CASH</span></div>
+              <div class="r-row" id="rs-split-cash-row" style="display:none"><span class="rl">&nbsp;&nbsp;↳ Cash</span><span class="rv" id="rs-split-cash">₦0</span></div>
+              <div class="r-row" id="rs-split-other-row" style="display:none"><span class="rl" id="rs-split-other-lbl">&nbsp;&nbsp;↳ Transfer</span><span class="rv" id="rs-split-other">₦0</span></div>
+            </div>
+            <div class="r-total" id="r-total-row"><span class="rtl">Sale total</span><span class="rtv" id="r-total">₦0</span></div>
 
             <!-- CASH ON HAND TRACKER -->
             <div class="cash-tracker hidden" id="cash-tracker">
@@ -580,22 +658,28 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               </div>
             </div>
 
-            <div class="r-lock"><i class="ti ti-lock" style="font-size:11px"></i> Revenue figures are admin-only</div>
+            <div class="r-lock" id="r-lock-note"><i class="ti ti-lock" style="font-size:11px"></i> Revenue figures are admin-only</div>
           </div>
         </div>
 
         <!-- RECENT SALES -->
         <div class="card" style="padding:0;overflow:hidden;margin-top:1.75rem;border-top:3px solid var(--brd)">
-          <div class="rs-head" style="background:var(--surf2)">
-            <div class="card-title" style="margin:0"><i class="ti ti-history" style="color:var(--grn-m)"></i> Recent sales this session</div>
-            <div class="sbar" style="max-width:260px">
-              <i class="ti ti-search"></i>
-              <input type="text" placeholder="Search sale ID, product, method…" oninput="renderRecentSales(this.value)">
+          <div class="rs-head" style="background:var(--surf2);flex-wrap:wrap;gap:9px">
+            <div class="card-title" style="margin:0"><i class="ti ti-history" style="color:var(--grn-m)"></i> Recent sales</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div class="dr-presets">
+                <button class="dr-preset-btn sel" id="rs-scope-today" onclick="setRecentSalesScope('today')">Today</button>
+                <button class="dr-preset-btn" id="rs-scope-all" onclick="setRecentSalesScope('all')">All time</button>
+              </div>
+              <div class="sbar" style="max-width:260px">
+                <i class="ti ti-search"></i>
+                <input type="text" id="rs-search" placeholder="Search sale ID, product, method…" oninput="renderRecentSales(this.value)">
+              </div>
             </div>
           </div>
           <div class="tw"><table class="dt">
-            <thead><tr><th>Print</th><th>Sale ID</th><th>Date</th><th>Product</th><th>Qty</th><th>Amount</th><th>Method</th></tr></thead>
-            <tbody id="recent-sales-tbody"><tr><td colspan="7"><div class="empty"><i class="ti ti-receipt"></i><p>No sales recorded yet this session</p></div></td></tr></tbody>
+            <thead><tr><th>Print</th><th>Sale ID</th><th>Type</th><th>Date</th><th>Product</th><th>Qty</th><th>Amount</th><th>Method</th></tr></thead>
+            <tbody id="recent-sales-tbody"><tr><td colspan="8"><div class="empty"><i class="ti ti-receipt"></i><p>No sales recorded yet today</p></div></td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -605,11 +689,19 @@ table.dt tbody tr:hover td{background:var(--surf2);}
         <div class="ph"><div><div class="ph-title">Log production</div><div class="ph-sub">Record today's production batch</div></div></div>
         <div class="pos">
           <div class="pos-card">
-            <div class="pos-head"><div class="pos-head-ico"><i class="ti ti-packages"></i></div><div><h2>New batch entry</h2><p>Log quantities and any wastage</p></div></div>
+            <div class="pos-head"><div class="pos-head-ico"><i class="ti ti-packages"></i></div><div><h2>New batch entry</h2><p>Log quantities and draw from material inventory</p></div></div>
             <div class="pos-body">
               <div class="ok" id="prod-ok"><i class="ti ti-circle-check"></i> Batch logged!</div>
               <div class="fg">
-                <div class="field"><label>Date</label><input type="date" id="p-date" onchange="regenBatch()"></div>
+                <div class="field">
+                  <label>Date</label>
+                  <input type="date" id="p-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('p-date','p-date-label', regenBatch)">
+                  <button class="date-btn" id="p-date-btn" type="button" onclick="openDatePickerG('p-date')">
+                    <i class="ti ti-calendar"></i>
+                    <span class="db-label" id="p-date-label">Today</span>
+                    <span class="db-change">tap to change</span>
+                  </button>
+                </div>
                 <div class="field full">
                   <label>Production batch code <span style="font-weight:400;text-transform:none;color:var(--txt3)">— auto-generated, links raw materials used to this batch</span></label>
                   <div class="batch-field">
@@ -617,14 +709,17 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                     <button type="button" class="btn btn-outline btn-sm" onclick="regenBatch()" title="Generate a fresh code"><i class="ti ti-refresh"></i></button>
                   </div>
                 </div>
-                <div class="field"><label>Material utilized</label>
-                  <select id="p-mat"><option value="A0001">A0001 — Printed roll</option><option value="A0002">A0002 — Packing bag</option></select>
+                <div class="field"><label>Material utilized <span style="font-weight:400;text-transform:none;color:var(--txt3)">— from Log raw materials used inventory</span></label>
+                  <select id="p-mat" onchange="onMatLotChange()"></select>
+                </div>
+                <div class="field"><label>Qty of material utilized (KG)</label>
+                  <input type="number" id="p-mat-qty" min="0" step="0.01" placeholder="e.g. 12.50" oninput="validateMatQty()">
+                  <div style="font-size:11px;color:var(--txt3);margin-top:4px" id="p-mat-avail-hint">Select a material to see availability</div>
                 </div>
                 <div class="field"><label>Product type</label>
                   <select id="p-type"><option>Pure water 50L</option><option>Dispenser water</option><option>Bottle water 50CL</option></select>
                 </div>
                 <div class="field"><label>Qty produced (bags)</label><input type="number" id="p-qty" placeholder="e.g. 400" min="1" oninput="updateBatchMetricsPreview()"></div>
-                <div class="field"><label>Damaged during production</label><input type="number" id="p-dmg" value="0" min="0"></div>
                 <div class="field full"><label>Notes</label><input type="text" id="p-note" placeholder="Operator notes, machine status…"></div>
               </div>
               <div class="f-actions">
@@ -638,7 +733,6 @@ table.dt tbody tr:hover td{background:var(--surf2);}
             <div class="r-body">
               <div class="srow"><span class="sl">Batches logged</span><span class="sv" id="p-count">0</span></div>
               <div class="srow"><span class="sl">Total bags produced</span><span class="sv" id="p-total">0</span></div>
-              <div class="srow"><span class="sl">Total damaged</span><span class="sv" style="color:var(--red)" id="p-tdmg">0</span></div>
             </div>
             <div class="r-head" style="border-top:1px solid var(--sb-brd)"><h3><i class="ti ti-calculator" style="color:#4d9aff"></i> This batch — cost of material</h3></div>
             <div class="r-body">
@@ -661,7 +755,15 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="ok" id="rm-ok"><i class="ti ti-circle-check"></i> Material usage logged!</div>
               <div class="err" id="rm-err"><i class="ti ti-alert-circle"></i> Add the weight of at least one roll used.</div>
               <div class="fg">
-                <div class="field"><label>Date</label><input type="date" id="rm-date"></div>
+                <div class="field">
+                  <label>Date</label>
+                  <input type="date" id="rm-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('rm-date','rm-date-label')">
+                  <button class="date-btn" id="rm-date-btn" type="button" onclick="openDatePickerG('rm-date')">
+                    <i class="ti ti-calendar"></i>
+                    <span class="db-label" id="rm-date-label">Today</span>
+                    <span class="db-change">tap to change</span>
+                  </button>
+                </div>
                 <div class="field"><label>Production batch</label><select id="rm-batch"></select></div>
                 <div class="field"><label>Category</label><select id="rm-cat" onchange="prefillUnitCost()"></select></div>
                 <div class="field"><label>Unit cost (₦ / KG)</label><input type="number" id="rm-cost" placeholder="e.g. 1850" min="0" oninput="recalcRollSummary()"></div>
@@ -718,14 +820,20 @@ table.dt tbody tr:hover td{background:var(--surf2);}
             <div class="pos-body">
               <div class="ok" id="exp-ok"><i class="ti ti-circle-check"></i> Expense recorded!</div>
               <div class="fg">
-                <div class="field"><label>Date</label><input type="date" id="e-date"></div>
+                <div class="field">
+                  <label>Date</label>
+                  <input type="date" id="e-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('e-date','e-date-label')">
+                  <button class="date-btn" id="e-date-btn" type="button" onclick="openDatePickerG('e-date')">
+                    <i class="ti ti-calendar"></i>
+                    <span class="db-label" id="e-date-label">Today</span>
+                    <span class="db-change">tap to change</span>
+                  </button>
+                </div>
                 <div class="field"><label>Category</label>
-                  <select id="e-cat">
-                    <option>Operator</option><option>Fuel</option><option>Repair</option><option>Driver</option>
-                    <option>Maintenance</option><option>Equipment & Machinery</option><option>Labor & Staff</option>
-                    <option>Logistics</option><option>Regulatory</option><option>Admin</option>
-                    <option>Marketing</option><option>Security</option><option>Miscellaneous</option>
-                  </select>
+                  <div style="display:flex;gap:6px">
+                    <select id="e-cat" style="flex:1"></select>
+                    <button class="btn btn-outline btn-sm admin-nav" id="add-cat-btn" style="display:none;flex-shrink:0" onclick="promptAddCat()" title="Add a new category"><i class="ti ti-plus"></i></button>
+                  </div>
                 </div>
                 <div class="field full"><label>Description</label><input type="text" id="e-desc" placeholder="e.g. Generator diesel — 20 litres, sealing machine repair"></div>
                 <div class="field"><label>Amount (₦)</label><input type="number" id="e-amt" placeholder="e.g. 5000" min="0"></div>
@@ -755,6 +863,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <!-- MY SALES -->
       <div class="page" id="page-mysales">
         <div class="ph"><div><div class="ph-title">My sales</div><div class="ph-sub">Sales you have recorded this session</div></div></div>
+        <div class="dr-bar" id="dr-bar-mysales"></div>
         <div class="mrow" style="max-width:540px;margin-bottom:1.5rem">
           <div class="mc b"><div class="mc-ico"><i class="ti ti-cash"></i></div><div class="mc-lbl">My revenue</div><div class="mc-val" id="my-rev">₦0</div><div class="mc-sub">this session</div></div>
           <div class="mc g"><div class="mc-ico"><i class="ti ti-shopping-cart"></i></div><div class="mc-lbl">Transactions</div><div class="mc-val" id="my-txn">0</div><div class="mc-sub">entries</div></div>
@@ -762,8 +871,8 @@ table.dt tbody tr:hover td{background:var(--surf2);}
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div class="tw"><table class="dt">
-            <thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Price</th><th>Amount</th><th>Damaged</th><th>Method</th></tr></thead>
-            <tbody id="my-tbody"><tr><td colspan="7"><div class="empty"><i class="ti ti-shopping-cart"></i><p>No sales recorded yet</p></div></td></tr></tbody>
+            <thead><tr><th>Type</th><th>Date</th><th>Product</th><th>Qty</th><th>Price</th><th>Amount</th><th>Damaged</th><th>Method</th></tr></thead>
+            <tbody id="my-tbody"><tr><td colspan="8"><div class="empty"><i class="ti ti-shopping-cart"></i><p>No sales recorded yet</p></div></td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -774,6 +883,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           <div><div class="ph-title">Dashboard <span class="atag"><i class="ti ti-lock" style="font-size:8px"></i> Admin</span></div><div class="ph-sub">Live overview — all staff activity</div></div>
           <button class="btn btn-outline btn-sm" onclick="renderDash()"><i class="ti ti-refresh"></i> Refresh</button>
         </div>
+        <div class="dr-bar" id="dr-bar-dash"></div>
         <div class="mrow">
           <div class="mc g"><div class="mc-ico"><i class="ti ti-cash"></i></div><div class="mc-lbl">Total revenue</div><div class="mc-val" id="d-rev">₦0</div><div class="mc-sub">all sales</div></div>
           <div class="mc b"><div class="mc-ico"><i class="ti ti-packages"></i></div><div class="mc-lbl">Produced</div><div class="mc-val" id="d-prod">0</div><div class="mc-sub">bags</div></div>
@@ -796,13 +906,14 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <!-- ALL SALES -->
       <div class="page" id="page-asales">
         <div class="ph"><div><div class="ph-title">All sales <span class="atag"><i class="ti ti-lock" style="font-size:8px"></i> Admin</span></div><div class="ph-sub">Every transaction across all staff</div></div></div>
+        <div class="dr-bar" id="dr-bar-asales"></div>
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:.9rem 1.2rem;display:flex;gap:9px;align-items:center;border-bottom:1.5px solid var(--brd);flex-wrap:wrap">
-            <div class="sbar"><i class="ti ti-search"></i><input type="text" placeholder="Search product, staff, method…" oninput="renderAS(this.value)"></div>
+            <div class="sbar"><i class="ti ti-search"></i><input type="text" id="as-search" placeholder="Search product, staff, method…" oninput="renderAS(this.value)"></div>
             <button class="btn btn-outline btn-sm" onclick="exportCSV('sales')"><i class="ti ti-download"></i> Export CSV</button>
           </div>
           <div class="tw"><table class="dt">
-            <thead><tr><th>Date</th><th>Staff</th><th>Product</th><th>Qty</th><th>Unit ₦</th><th>Amount</th><th>Damaged</th><th>Method</th><th>Cash Rcvd</th><th>Change</th><th>Net Cash</th><th>Note</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Staff</th><th>Type</th><th>Product</th><th>Qty</th><th>Unit ₦</th><th>Amount</th><th>Damaged</th><th>Method</th><th>Carried/Leak/Exch/Extra</th><th>Cash Rcvd</th><th>Change</th><th>Net Cash</th><th>Note</th><th></th></tr></thead>
             <tbody id="as-tbody"></tbody>
           </table></div>
         </div>
@@ -811,12 +922,13 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <!-- ALL PRODUCTION -->
       <div class="page" id="page-aprod">
         <div class="ph"><div><div class="ph-title">All production <span class="atag"><i class="ti ti-lock" style="font-size:8px"></i> Admin</span></div><div class="ph-sub">Production batches logged by all staff</div></div></div>
+        <div class="dr-bar" id="dr-bar-aprod"></div>
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:.9rem 1.2rem;border-bottom:1.5px solid var(--brd)">
             <button class="btn btn-outline btn-sm" onclick="exportCSV('production')"><i class="ti ti-download"></i> Export CSV</button>
           </div>
           <div class="tw"><table class="dt">
-            <thead><tr><th>Date</th><th>Batch</th><th>Material</th><th>Type</th><th>Qty</th><th>Damaged</th><th>Material cost</th><th>KG used</th><th>Production/KG</th><th>Logged by</th><th>Note</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Batch</th><th>Material lot used</th><th>Qty utilized</th><th>Type</th><th>Qty</th><th>Material cost</th><th>KG used</th><th>Production/KG</th><th>Logged by</th><th>Note</th><th></th></tr></thead>
             <tbody id="ap-tbody"></tbody>
           </table></div>
         </div>
@@ -825,6 +937,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <!-- ALL EXPENSES -->
       <div class="page" id="page-aexp">
         <div class="ph"><div><div class="ph-title">All expenses <span class="atag"><i class="ti ti-lock" style="font-size:8px"></i> Admin</span></div><div class="ph-sub">Every cost recorded by all staff</div></div></div>
+        <div class="dr-bar" id="dr-bar-aexp"></div>
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:.9rem 1.2rem;border-bottom:1.5px solid var(--brd)">
             <button class="btn btn-outline btn-sm" onclick="exportCSV('expenses')"><i class="ti ti-download"></i> Export CSV</button>
@@ -1007,6 +1120,45 @@ table.dt tbody tr:hover td{background:var(--surf2);}
   </div>
 </div>
 
+<div class="mo" id="addcat-mo">
+  <div class="modal">
+    <div class="modal-hd"><span>Add expense category</span><button class="modal-x" onclick="closeAddCatMo()"><i class="ti ti-x"></i></button></div>
+    <div class="field full" style="margin-bottom:1.2rem">
+      <label>Category name</label>
+      <input type="text" id="addcat-input" placeholder="e.g. Vehicle Insurance" maxlength="40">
+      <div class="err" id="addcat-err" style="display:none;margin-top:6px"><i class="ti ti-alert-circle"></i> <span id="addcat-err-msg">Enter a category name</span></div>
+    </div>
+    <div style="display:flex;gap:9px">
+      <button class="btn btn-primary btn-full" onclick="confirmAddCat()"><i class="ti ti-check"></i> Add category</button>
+      <button class="btn btn-outline btn-full" onclick="closeAddCatMo()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="mo" id="signout-mo">
+  <div class="modal">
+    <div class="modal-hd"><span>Confirm sign out</span><button class="modal-x" onclick="closeSignOutMo()"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:1.4rem;line-height:1.65">
+      Are you sure you want to sign out? Once you sign out, you <strong style="color:var(--red-m)">won't be able to sign in again for the rest of today</strong> — sign-in resumes tomorrow.
+    </p>
+    <div style="display:flex;gap:9px">
+      <button class="btn btn-danger btn-full" onclick="confirmSignOut()"><i class="ti ti-logout"></i> Yes, sign me out</button>
+      <button class="btn btn-outline btn-full" onclick="closeSignOutMo()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="mo" id="void-mo">
+  <div class="modal">
+    <div class="modal-hd"><span id="void-mo-title">Void this sale?</span><button class="modal-x" onclick="closeVoidMo()"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:1.4rem;line-height:1.65" id="void-mo-text">The sale will be struck through and excluded from totals. It stays on record and can be restored at any time.</p>
+    <div style="display:flex;gap:9px">
+      <button class="btn btn-danger btn-full" onclick="confirmVoid()" id="void-mo-btn"><i class="ti ti-ban"></i> Yes, void sale</button>
+      <button class="btn btn-outline btn-full" onclick="closeVoidMo()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM SALE MODAL -->
 <div class="mo" id="confirm-sale-mo">
   <div class="modal" style="max-width:440px">
@@ -1034,7 +1186,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           <div style="font-size:13px;font-weight:600;color:#d0e8ff" id="csm-product">—</div>
           <div style="font-size:11px;color:var(--sb-text);margin-top:1px" id="csm-qty-label">—</div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
+        <div style="text-align:right;flex-shrink:0" id="csm-price-box">
           <div style="font-size:10px;color:var(--sb-muted);text-transform:uppercase;letter-spacing:.05em">Unit price</div>
           <div style="font-size:13px;font-weight:600;color:#d0e8ff;font-family:'DM Mono',monospace" id="csm-unit-price">—</div>
         </div>
@@ -1042,21 +1194,36 @@ table.dt tbody tr:hover td{background:var(--surf2);}
 
       <!-- Breakdown rows -->
       <div style="padding:.7rem 1rem">
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)" id="csm-qty-row">
           <span style="color:var(--sb-text)">Quantity</span>
           <span style="color:#d0e8ff;font-family:'DM Mono',monospace" id="csm-qty">—</span>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)" id="csm-dmg-row">
           <span style="color:var(--sb-text)">Damaged / returned</span>
           <span style="color:var(--red-m);font-family:'DM Mono',monospace" id="csm-dmg">0</span>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)" id="csm-method-row">
           <span style="color:var(--sb-text)">Payment method</span>
           <span style="color:#d0e8ff" id="csm-method">—</span>
         </div>
         <div id="csm-split-row" style="display:none;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)">
           <span style="color:var(--sb-text)" id="csm-split-lbl">Split</span>
           <span style="color:#d0e8ff;font-family:'DM Mono',monospace" id="csm-split-val">—</span>
+        </div>
+        <!-- SUPPLY-ONLY ROWS -->
+        <div id="csm-supply-rows" style="display:none">
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)">
+            <span style="color:var(--sb-text)">Leakage</span>
+            <span style="color:var(--red-m);font-family:'DM Mono',monospace" id="csm-leak">0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)">
+            <span style="color:var(--sb-text)">Leakage exchanged</span>
+            <span style="color:#d0e8ff;font-family:'DM Mono',monospace" id="csm-leak-ex">0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;border-bottom:1px dashed var(--sb-brd)">
+            <span style="color:var(--sb-text)">Extra packing bags (packs)</span>
+            <span style="color:#d0e8ff;font-family:'DM Mono',monospace" id="csm-extra">0</span>
+          </div>
         </div>
         <div id="csm-note-row" style="display:none;justify-content:space-between;padding:4px 0;font-size:12.5px">
           <span style="color:var(--sb-text)">Note</span>
@@ -1065,9 +1232,9 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       </div>
 
       <!-- Total bar -->
-      <div style="background:rgba(26,95,203,.12);border-top:1.5px solid rgba(77,154,255,.2);padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between">
+      <div style="background:rgba(26,95,203,.12);border-top:1.5px solid rgba(77,154,255,.2);padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between" id="csm-total-bar">
         <div>
-          <div style="font-size:9.5px;font-weight:700;color:var(--sb-text);letter-spacing:.07em;text-transform:uppercase">Total amount</div>
+          <div style="font-size:9.5px;font-weight:700;color:var(--sb-text);letter-spacing:.07em;text-transform:uppercase" id="csm-total-lbl">Total amount</div>
           <div style="font-size:10px;color:var(--sb-muted);margin-top:1px" id="csm-total-sub">—</div>
         </div>
         <div style="font-size:28px;font-weight:700;color:#4d9aff;font-family:'DM Mono',monospace" id="csm-total">₦0</div>
@@ -1079,7 +1246,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <button class="btn btn-primary btn-full" onclick="finalizeSale(false)" style="padding:11px 18px;font-size:14px">
         <i class="ti ti-circle-check"></i> Confirm &amp; Save
       </button>
-      <button class="btn btn-outline btn-full" onclick="finalizeSale(true)" style="padding:11px 18px;font-size:14px">
+      <button class="btn btn-outline btn-full" id="csm-print-btn" onclick="finalizeSale(true)" style="padding:11px 18px;font-size:14px">
         <i class="ti ti-printer"></i> Save &amp; Print Receipt
       </button>
       <button class="btn-text" onclick="cancelSaleConfirm()" style="color:var(--red-m);padding:8px">
@@ -1112,10 +1279,10 @@ const MAT_CATS=[
 let CU=null,delT={t:null,id:null},sM='CASH',chPay=null,chExp=null;
 function populateMatSelects(){
   const opts=MAT_CATS.map(m=>`<option value="${m.code}">${m.code} — ${m.name}</option>`).join('');
-  const matSel=document.getElementById('p-mat');if(matSel)matSel.innerHTML=opts;
   const catSel=document.getElementById('rm-cat');if(catSel)catSel.innerHTML=opts;
 }
 populateMatSelects();
+populateMatLotSelect();
 
 /* =============================================
    GEOFENCE CONFIG — configurable by admin via UI
@@ -1269,6 +1436,7 @@ function finaliseLogin(user){
   document.getElementById('user-name').textContent=user.name;
   document.getElementById('user-av').textContent=user.name[0].toUpperCase();
   setDates();
+  populateExpCats();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
   resetRollRows();
   if(user.role!=='staff') document.querySelectorAll('.admin-nav').forEach(el=>el.style.display='');
@@ -1309,6 +1477,14 @@ function attSignIn(user){
 
 function attSignOut(){
   if(!CU) return;
+  document.getElementById('signout-mo').classList.add('open');
+}
+function closeSignOutMo(){
+  document.getElementById('signout-mo').classList.remove('open');
+}
+function confirmSignOut(){
+  if(!CU) return;
+  document.getElementById('signout-mo').classList.remove('open');
   const todayKey = new Date().toISOString().split('T')[0];
   const rec = DB.attendance.find(r=>r.userId===CU.id && r.date===todayKey && !r.signOut);
   if(rec){
@@ -1317,7 +1493,7 @@ function attSignOut(){
   updateAttStatusBar();
   renderAttMy();
   if(CU.role!=='staff') renderAttAdmin('');
-  toast('Signed out successfully. See you tomorrow!','s');
+  toast("Signed out successfully. You won't be able to sign in again until tomorrow.",'s');
   // After sign-out, log the user out of the app
   setTimeout(()=>doLogout(), 1800);
 }
@@ -1339,16 +1515,30 @@ function updateAttStatusBar(){
   } else {
     dot.className='att-dot in';
     statusText.textContent='Signed in — shift in progress';
-    statusSub.textContent='Since '+fmtTime(rec.signIn);
+    statusSub.textContent='Since '+fmtTime(rec.signIn)+' · '+calcDuration(rec.signIn, new Date().toISOString())+' elapsed';
     btn.style.display='';
   }
 }
 
+let _attTickCount = 0;
 function startAttClock(){
   if(_attClockInterval) clearInterval(_attClockInterval);
+  _attTickCount = 0;
   const tick=()=>{
     const el=document.getElementById('att-live-clock');
     if(el) el.textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+    // keep the "since X · Yh Zm elapsed" line and sign-out gating accurate every second
+    updateAttStatusBar();
+    // also re-render the attendance tables periodically so durations/counts
+    // for the active staff and admin views stay up to date in real time
+    _attTickCount++;
+    if(_attTickCount % 15 === 0){
+      renderAttMy();
+      if(CU && CU.role!=='staff' && document.getElementById('page-att-admin') && document.getElementById('page-att-admin').classList.contains('active')){
+        const q=document.querySelector('#page-att-admin input[type="text"]');
+        renderAttAdmin(q?q.value:'');
+      }
+    }
   };
   tick(); _attClockInterval=setInterval(tick,1000);
 }
@@ -1449,13 +1639,132 @@ function goPage(name,btn){
 }
 
 function setDates(){
-  const t=new Date().toISOString().split('T')[0];
-  // s-date handled by date button (shows Today by default)
-  ['p-date','e-date','rm-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  // s-date, rm-date, p-date and e-date are all handled by date buttons (show Today by default)
+  ['p-date','e-date','rm-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['p-date-label','e-date-label','rm-date-label'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Today';});
 }
 
 /* SALE */
 const TODAY = new Date().toISOString().split('T')[0];
+
+/* =============================================
+   DATE RANGE FILTERS (My Sales, Dashboard, All Sales, All Production, All Expenses)
+   ============================================= */
+const DR_CFG = {
+  mysales:{render:()=>renderMySales(), label:'My sales'},
+  dash:{render:()=>renderDash(), label:'Dashboard'},
+  asales:{render:()=>{const i=document.getElementById('as-search'); renderAS(i?i.value:'');}, label:'All sales'},
+  aprod:{render:()=>renderAP(), label:'All production'},
+  aexp:{render:()=>renderAE(), label:'All expenses'}
+};
+let DR = {mysales:{from:null,to:null},dash:{from:null,to:null},asales:{from:null,to:null},aprod:{from:null,to:null},aexp:{from:null,to:null}};
+
+function inDR(key, dateStr){
+  const r = DR[key];
+  if(!r || (!r.from && !r.to)) return true;
+  if(!dateStr) return false;
+  if(r.from && dateStr<r.from) return false;
+  if(r.to && dateStr>r.to) return false;
+  return true;
+}
+
+function buildDRBar(key){
+  const el = document.getElementById('dr-bar-'+key);
+  if(!el) return;
+  el.innerHTML = `
+    <label>From</label>
+    <input type="date" id="dr-${key}-from" onchange="applyDR('${key}')">
+    <label>To</label>
+    <input type="date" id="dr-${key}-to" onchange="applyDR('${key}')">
+    <div class="dr-presets">
+      <button class="dr-preset-btn" onclick="setDRPreset('${key}',0)">Today</button>
+      <button class="dr-preset-btn" onclick="setDRPreset('${key}',7)">Last 7 days</button>
+      <button class="dr-preset-btn" onclick="setDRPreset('${key}',30)">Last 30 days</button>
+      <button class="dr-preset-btn sel" onclick="setDRPreset('${key}',null)">All time</button>
+    </div>
+    <span class="dr-label" id="dr-${key}-label"></span>
+  `;
+}
+
+function initDRBars(){
+  Object.keys(DR_CFG).forEach(buildDRBar);
+}
+
+function updateDRLabel(key){
+  const lbl = document.getElementById('dr-'+key+'-label');
+  if(!lbl) return;
+  const r = DR[key];
+  if(!r.from && !r.to){ lbl.textContent='Showing all records'; return; }
+  if(r.from && r.to){ lbl.textContent='Showing '+fmtDate(r.from)+' – '+fmtDate(r.to); return; }
+  if(r.from){ lbl.textContent='From '+fmtDate(r.from)+' onward'; return; }
+  lbl.textContent='Up to '+fmtDate(r.to);
+}
+
+function markDRPresetSel(key, daysOrNull){
+  document.querySelectorAll('#dr-bar-'+key+' .dr-preset-btn').forEach(b=>b.classList.remove('sel'));
+}
+
+function applyDR(key){
+  const f = document.getElementById('dr-'+key+'-from').value;
+  const t = document.getElementById('dr-'+key+'-to').value;
+  DR[key] = {from:f||null, to:t||null};
+  markDRPresetSel(key);
+  updateDRLabel(key);
+  if(DR_CFG[key]) DR_CFG[key].render();
+}
+
+function clearDR(key){
+  setDRPreset(key, null);
+}
+
+function setDRPreset(key, days){
+  let fromStr=null, toStr=null;
+  if(days!==null){
+    const t=new Date();
+    toStr = t.toISOString().split('T')[0];
+    const f=new Date(t); f.setDate(f.getDate()-days);
+    fromStr = f.toISOString().split('T')[0];
+  }
+  DR[key]={from:fromStr,to:toStr};
+  const fEl=document.getElementById('dr-'+key+'-from'); if(fEl) fEl.value=fromStr||'';
+  const tEl=document.getElementById('dr-'+key+'-to'); if(tEl) tEl.value=toStr||'';
+  document.querySelectorAll('#dr-bar-'+key+' .dr-preset-btn').forEach(b=>{
+    b.classList.toggle('sel',
+      (days===null && b.textContent==='All time') ||
+      (days===0 && b.textContent==='Today') ||
+      (days===7 && b.textContent==='Last 7 days') ||
+      (days===30 && b.textContent==='Last 30 days'));
+  });
+  updateDRLabel(key);
+  if(DR_CFG[key]) DR_CFG[key].render();
+}
+
+function openDatePickerG(inputId){
+  const inp = document.getElementById(inputId);
+  inp.style.position = 'fixed';
+  inp.style.opacity = '0';
+  inp.style.top = '0';
+  inp.style.left = '0';
+  inp.style.width = '100vw';
+  inp.style.height = '100vh';
+  inp.style.zIndex = '9999';
+  inp.style.pointerEvents = 'all';
+  inp.showPicker ? inp.showPicker() : inp.click();
+  inp.addEventListener('blur', ()=>{ inp.style.pointerEvents='none'; inp.style.opacity='0'; inp.style.position='absolute'; inp.style.width='1px'; inp.style.height='1px'; }, {once:true});
+}
+function dateChangeG(inputId, labelId, cb){
+  const inp = document.getElementById(inputId);
+  const lbl = document.getElementById(labelId);
+  const val = inp.value;
+  inp.style.pointerEvents='none'; inp.style.opacity='0'; inp.style.position='absolute'; inp.style.width='1px'; inp.style.height='1px';
+  if(!val || val===TODAY){ lbl.textContent='Today'; }
+  else{
+    const [y,m,d]=val.split('-');
+    const months='Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+    lbl.textContent=parseInt(d)+' '+months[parseInt(m)-1]+' '+y.slice(2);
+  }
+  if(cb) cb(val);
+}
 
 function openDatePicker(){
   const inp = document.getElementById('s-date');
@@ -1469,6 +1778,21 @@ function openDatePicker(){
   inp.style.pointerEvents = 'all';
   inp.showPicker ? inp.showPicker() : inp.click();
   inp.addEventListener('blur', ()=>{ inp.style.pointerEvents='none'; inp.style.opacity='0'; inp.style.position='absolute'; inp.style.width='1px'; inp.style.height='1px'; }, {once:true});
+}
+
+let sType='walkin';
+function selSaleType(t, el){
+  sType=t;
+  document.querySelectorAll('#stype-pills .mpill').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('walkin-fields').style.display = t==='walkin' ? 'contents' : 'none';
+  document.getElementById('supply-fields').style.display = t==='supply' ? 'contents' : 'none';
+  document.getElementById('r-body-walkin').style.display = t==='walkin' ? '' : 'none';
+  document.getElementById('r-body-supply').style.display = t==='supply' ? '' : 'none';
+  document.getElementById('r-head-title').textContent = t==='walkin' ? 'Sale receipt' : 'Supply sale receipt';
+  document.getElementById('r-lock-note').innerHTML = '<i class="ti ti-lock" style="font-size:11px"></i> Revenue figures are admin-only';
+  if(t==='supply') document.getElementById('cash-tracker').classList.add('hidden');
+  updateR();
 }
 
 function onDateChange(){
@@ -1487,9 +1811,25 @@ function onDateChange(){
   updateR();
 }
 
+let spM='CASH';
+function selMSp(m, el){
+  spM = m;
+  document.querySelectorAll('#mpills-sp .mpill').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  const isSplit = m==='SPLIT_CT'||m==='SPLIT_CP';
+  const sf = document.getElementById('split-fields-sp');
+  sf.classList.toggle('hidden', !isSplit);
+  if(isSplit){
+    const otherLbl = m==='SPLIT_CT' ? 'Transfer portion (\u20a6)' : 'POS portion (\u20a6)';
+    document.getElementById('split-other-lbl-sp').textContent = otherLbl;
+  }
+  if(!isSplit){ ['sp-cash-split','sp-other-split'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';}); }
+  updateR();
+}
+
 function selM(m, el){
   sM = m;
-  document.querySelectorAll('.mpill').forEach(p=>p.classList.remove('sel'));
+  document.querySelectorAll('#mpills .mpill').forEach(p=>p.classList.remove('sel'));
   el.classList.add('sel');
   const isSplit = m==='SPLIT_CT'||m==='SPLIT_CP';
   const hasCash = m==='CASH'||m==='SPLIT_CT'||m==='SPLIT_CP';
@@ -1510,6 +1850,40 @@ function selM(m, el){
 }
 
 function updateR(){
+  if(sType==='supply'){
+    const carried=parseFloat(document.getElementById('sp-carried').value)||0;
+    const sold=parseFloat(document.getElementById('sp-sold').value)||0;
+    const price=parseFloat(document.getElementById('sp-price').value)||0;
+    const leak=parseFloat(document.getElementById('sp-leak').value)||0;
+    const leakEx=parseFloat(document.getElementById('sp-leak-ex').value)||0;
+    const extra=parseFloat(document.getElementById('sp-extra').value)||0;
+    const outstanding=Math.max(0, carried-sold-leak);
+    const amount=sold*price;
+    document.getElementById('rs-driver').textContent=document.getElementById('sp-driver').value||'—';
+    document.getElementById('rs-prod').textContent=document.getElementById('sp-product').value||'—';
+    document.getElementById('rs-carried').textContent=carried;
+    document.getElementById('rs-sold').textContent=sold;
+    document.getElementById('rs-price').textContent=price?'₦'+price.toLocaleString():'₦—';
+    document.getElementById('rs-leak').textContent=leak;
+    document.getElementById('rs-leak-ex').textContent=leakEx;
+    document.getElementById('rs-extra').textContent=extra;
+    document.getElementById('rs-outstanding').textContent=outstanding;
+    document.getElementById('rs-method').textContent=spM.replace('_',' + ');
+    document.getElementById('r-total').textContent='\u20a6'+amount.toLocaleString();
+    const isSplit = spM==='SPLIT_CT'||spM==='SPLIT_CP';
+    document.getElementById('rs-split-cash-row').style.display = isSplit ? 'flex' : 'none';
+    document.getElementById('rs-split-other-row').style.display = isSplit ? 'flex' : 'none';
+    if(isSplit){
+      const cashSplit=parseFloat(document.getElementById('sp-cash-split').value)||0;
+      const otherSplit=parseFloat(document.getElementById('sp-other-split').value)||0;
+      document.getElementById('rs-split-cash').textContent='\u20a6'+cashSplit.toLocaleString();
+      document.getElementById('rs-split-other').textContent='\u20a6'+otherSplit.toLocaleString();
+      document.getElementById('rs-split-other-lbl').textContent='\u00a0\u00a0\u21b3 '+(spM==='SPLIT_CT'?'Transfer':'POS');
+    }
+    const dateVal = document.getElementById('s-date').value;
+    document.getElementById('r-date').textContent = (!dateVal||dateVal===TODAY) ? 'Today' : document.getElementById('s-date-label').textContent;
+    return;
+  }
   const qty   = parseFloat(document.getElementById('s-qty').value)||0;
   const price = parseFloat(document.getElementById('s-price').value)||0;
   const dmg   = parseFloat(document.getElementById('s-dmg').value)||0;
@@ -1559,6 +1933,71 @@ function updateR(){
 let pendingSale=null;
 
 function submitSale(){
+  if(sType==='supply'){
+    const dateVal = document.getElementById('s-date').value;
+    const date    = dateVal || TODAY;
+    const driver  = document.getElementById('sp-driver').value.trim();
+    const product = document.getElementById('sp-product').value;
+    const carried = parseFloat(document.getElementById('sp-carried').value);
+    const sold    = parseFloat(document.getElementById('sp-sold').value);
+    const price   = parseFloat(document.getElementById('sp-price').value);
+    const leak    = parseFloat(document.getElementById('sp-leak').value)||0;
+    const leakEx  = parseFloat(document.getElementById('sp-leak-ex').value)||0;
+    const extra   = parseFloat(document.getElementById('sp-extra').value)||0;
+    const note    = document.getElementById('sp-note').value;
+
+    if(!driver){toast('Enter the driver name','e');return;}
+    if(!carried||!sold){toast('Fill in bags carried and bags sold','e');return;}
+    if(!price){toast('Enter the price per bag','e');return;}
+
+    const outstanding=Math.max(0, carried-sold-leak);
+    const amount=sold*price;
+    let cashSplit=0, otherSplit=0;
+    if(spM==='SPLIT_CT'||spM==='SPLIT_CP'){
+      cashSplit=parseFloat(document.getElementById('sp-cash-split').value)||0;
+      otherSplit=parseFloat(document.getElementById('sp-other-split').value)||0;
+      if(cashSplit+otherSplit!==amount){toast('Split amounts must add up to the total ('+'\u20a6'+amount.toLocaleString()+')','e');return;}
+    }
+
+    pendingSale = {
+      type:'supply', date, product, driver, qty:sold,
+      carried, sold, leak, leakEx, extra, outstanding,
+      price, amount, damaged:0, method:spM,
+      note, staff:CU.name, staffId:CU.id,
+      cashSplit, otherSplit, voided:false
+    };
+
+    const g = id => document.getElementById(id);
+    g('csm-product').textContent    = product+' — '+driver;
+    g('csm-qty-label').textContent  = sold+' of '+carried+' bags sold';
+    g('csm-price-box').style.display='';
+    g('csm-unit-price').textContent = '\u20a6'+price.toLocaleString();
+    g('csm-qty-row').style.display='flex';
+    g('csm-qty').textContent=sold;
+    g('csm-dmg-row').style.display='none';
+    g('csm-method-row').style.display='flex';
+    g('csm-method').textContent=spM.replace('_',' + ');
+    if(spM==='SPLIT_CT'||spM==='SPLIT_CP'){
+      g('csm-split-row').style.display='flex';
+      g('csm-split-lbl').textContent='Split (cash / other)';
+      g('csm-split-val').textContent='\u20a6'+cashSplit.toLocaleString()+' / \u20a6'+otherSplit.toLocaleString();
+    } else { g('csm-split-row').style.display='none'; }
+    g('csm-supply-rows').style.display='block';
+    g('csm-leak').textContent=leak;
+    g('csm-leak-ex').textContent=leakEx;
+    g('csm-extra').textContent=extra;
+    g('csm-total-lbl').textContent='Total amount';
+    g('csm-total-sub').textContent=outstanding+' bags outstanding';
+    g('csm-total').textContent='\u20a6'+amount.toLocaleString();
+    g('csm-print-btn').style.display='';
+    const noteRow = g('csm-note-row');
+    if(note){ g('csm-note').textContent=note; noteRow.style.display='flex'; }
+    else { noteRow.style.display='none'; }
+
+    document.getElementById('confirm-sale-mo').classList.add('open');
+    return;
+  }
+
   const dateVal = document.getElementById('s-date').value;
   const date    = dateVal || TODAY;
   const product = document.getElementById('s-product').value;
@@ -1578,14 +2017,21 @@ function submitSale(){
   const amount = qty*price;
 
   pendingSale = {
-    date, product, qty, price, damaged:dmg, method:sM,
+    type:'walkin', date, product, qty, price, damaged:dmg, method:sM,
     note, staff:CU.name, staffId:CU.id, amount,
     cashReceived:received, changeGiven:change, netCash:received-change,
-    cashSplit, otherSplit
+    cashSplit, otherSplit, voided:false
   };
 
   // Populate rich confirm modal
   const g = id => document.getElementById(id);
+  g('csm-price-box').style.display='';
+  g('csm-qty-row').style.display='flex';
+  g('csm-dmg-row').style.display='flex';
+  g('csm-method-row').style.display='flex';
+  g('csm-supply-rows').style.display='none';
+  g('csm-total-lbl').textContent='Total amount';
+  g('csm-print-btn').style.display='';
   g('csm-product').textContent    = product;
   g('csm-qty-label').textContent  = qty+' bag'+(qty===1?'':'s') + (dmg>0?' · '+dmg+' damaged/returned':'');
   g('csm-qty').textContent        = qty + ' bag'+(qty===1?'':'s');
@@ -1627,7 +2073,7 @@ function finalizeSale(doPrint){
   const sale={...pendingSale, id, saleId:genSaleId(id), ts:Date.now()};
   DB.sales.push(sale);
   document.getElementById('confirm-sale-mo').classList.remove('open');
-  showOk('sale-ok'); clearSale(); toast('Sale recorded!','s');
+  showOk('sale-ok'); clearSale(); toast(sale.type==='supply'?'Supply log recorded!':'Sale recorded!','s');
   renderRecentSales();
   if(doPrint) printReceipt(sale);
   pendingSale=null;
@@ -1654,8 +2100,8 @@ function printReceipt(sale){
     extraRows+=`<div><span>&nbsp;&nbsp;\u21b3 ${otherLbl}</span><span>\u20a6${sale.otherSplit.toLocaleString()}</span></div>`;
   }
   if(hasCash){
-    extraRows+=`<div><span>Cash received</span><span>\u20a6${sale.cashReceived.toLocaleString()}</span></div>`;
-    extraRows+=`<div><span>Change given</span><span>\u20a6${sale.changeGiven.toLocaleString()}</span></div>`;
+    extraRows+=`<div><span>Cash received</span><span>\u20a6${(sale.cashReceived||0).toLocaleString()}</span></div>`;
+    extraRows+=`<div><span>Change given</span><span>\u20a6${(sale.changeGiven||0).toLocaleString()}</span></div>`;
   }
 
   document.getElementById('print-receipt-root').innerHTML = `
@@ -1712,8 +2158,8 @@ function clearSale(){
   document.getElementById('r-date').textContent='Today';
   // reset method to CASH
   sM='CASH';
-  document.querySelectorAll('.mpill').forEach(p=>p.classList.remove('sel'));
-  document.querySelectorAll('.mpill')[0].classList.add('sel');
+  document.querySelectorAll('#mpills .mpill').forEach(p=>p.classList.remove('sel'));
+  document.querySelectorAll('#mpills .mpill')[0].classList.add('sel');
   document.getElementById('split-fields').classList.add('hidden');
   document.getElementById('cash-fields').classList.add('hidden');
   document.getElementById('cash-tracker').classList.add('hidden');
@@ -1722,32 +2168,119 @@ function clearSale(){
   document.getElementById('r-price').textContent='\u20a6\u2014';
   document.getElementById('r-split-cash-row').style.display='none';
   document.getElementById('r-split-other-row').style.display='none';
+  // reset supply fields
+  ['sp-driver','sp-carried','sp-sold','sp-price','sp-note','sp-cash-split','sp-other-split'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['sp-leak','sp-leak-ex','sp-extra'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='0';
+  });
+  // reset supply payment method to CASH
+  spM='CASH';
+  document.querySelectorAll('#mpills-sp .mpill').forEach(p=>p.classList.remove('sel'));
+  document.querySelectorAll('#mpills-sp .mpill')[0].classList.add('sel');
+  document.getElementById('split-fields-sp').classList.add('hidden');
+  // reset sale type back to walk-in
+  document.querySelectorAll('#stype-pills .mpill').forEach(p=>p.classList.remove('sel'));
+  document.querySelectorAll('#stype-pills .mpill')[0].classList.add('sel');
+  selSaleType('walkin', document.querySelectorAll('#stype-pills .mpill')[0]);
 }
 
 /* PRODUCTION */
+function matLabel(code){ const m=MAT_CATS.find(x=>x.code===code); return m?m.name:code; }
+
+/* MATERIAL INVENTORY — each "Log raw materials used" entry is a lot; available qty
+   is derived live from how much production has already drawn against it */
+function rawmatConsumed(lotId){
+  return DB.production.filter(p=>p.matLotId===lotId).reduce((a,p)=>a+(p.matQtyUsed||0),0);
+}
+function rawmatAvailable(r){
+  return Math.max(0, +(r.qtyKg - rawmatConsumed(r.id)).toFixed(2));
+}
+function populateMatLotSelect(){
+  const sel=document.getElementById('p-mat'); if(!sel) return;
+  const cur=sel.value;
+  const lots=DB.rawmats.filter(r=>rawmatAvailable(r)>0);
+  if(!lots.length){
+    sel.innerHTML='<option value="">No material inventory available</option>';
+    onMatLotChange();
+    return;
+  }
+  sel.innerHTML='<option value="">— Select material lot —</option>'+lots.slice().reverse().map(r=>{
+    const avail=rawmatAvailable(r);
+    return `<option value="${r.id}">RM-${String(r.id).padStart(4,'0')} — ${matLabel(r.category)} · ${avail.toFixed(2)} kg available</option>`;
+  }).join('');
+  if(lots.some(r=>String(r.id)===cur)) sel.value=cur;
+  onMatLotChange();
+}
+function onMatLotChange(){
+  const sel=document.getElementById('p-mat');
+  const hint=document.getElementById('p-mat-avail-hint');
+  const qtyInput=document.getElementById('p-mat-qty');
+  if(!sel || !hint || !qtyInput) return;
+  if(!sel.value){
+    hint.textContent = sel.options.length && sel.options[0].value===''&&sel.options.length===1
+      ? 'Log raw materials first to make inventory available here.'
+      : 'Select a material to see availability';
+    qtyInput.removeAttribute('max');
+    return;
+  }
+  const r=DB.rawmats.find(x=>String(x.id)===sel.value);
+  const avail=r?rawmatAvailable(r):0;
+  hint.textContent=avail.toFixed(2)+' kg available in this lot';
+  qtyInput.max=avail;
+}
+function validateMatQty(){
+  const sel=document.getElementById('p-mat');
+  const qtyInput=document.getElementById('p-mat-qty');
+  const hint=document.getElementById('p-mat-avail-hint');
+  if(!sel || !sel.value) return;
+  const r=DB.rawmats.find(x=>String(x.id)===sel.value);
+  const avail=r?rawmatAvailable(r):0;
+  const val=parseFloat(qtyInput.value)||0;
+  if(val>avail){
+    hint.innerHTML='<span style="color:var(--red-m)">Only '+avail.toFixed(2)+' kg available — reduce quantity</span>';
+  } else {
+    hint.textContent=avail.toFixed(2)+' kg available in this lot';
+  }
+}
+
 function submitProd(){
-  const date=document.getElementById('p-date').value;
+  const date=document.getElementById('p-date').value || TODAY;
   const batch=document.getElementById('p-batch').value.trim();
-  const mat=document.getElementById('p-mat').value;
+  const matLotIdRaw=document.getElementById('p-mat').value;
+  const matQty=parseFloat(document.getElementById('p-mat-qty').value)||0;
   const type=document.getElementById('p-type').value;
   const qty=parseFloat(document.getElementById('p-qty').value);
-  const dmg=parseFloat(document.getElementById('p-dmg').value)||0;
   const note=document.getElementById('p-note').value;
   if(!date||!batch||!qty){toast('Fill in date and quantity','e');return;}
-  DB.production.push({id:DB.nid(),date,batch,material:mat,type,qty,damaged:dmg,note,staff:CU.name,staffId:CU.id});
-  showOk('prod-ok');clearProd();toast('Batch logged! Code: '+batch,'s');updateProdPanel();populateBatchSelect();
+  let matLotId=null, matLotLabel='—', matQtyUsed=0;
+  if(matLotIdRaw){
+    const lot=DB.rawmats.find(r=>String(r.id)===matLotIdRaw);
+    if(lot){
+      const avail=rawmatAvailable(lot);
+      if(matQty<=0){toast('Enter the quantity of material utilized','e');return;}
+      if(matQty>avail){toast('Only '+avail.toFixed(2)+' kg available in that material lot','e');return;}
+      matLotId=lot.id;
+      matLotLabel='RM-'+String(lot.id).padStart(4,'0')+' — '+matLabel(lot.category);
+      matQtyUsed=matQty;
+    }
+  }
+  DB.production.push({id:DB.nid(),date,batch,matLotId,matLotLabel,matQtyUsed,type,qty,note,staff:CU.name,staffId:CU.id});
+  showOk('prod-ok');clearProd();toast('Batch logged! Code: '+batch,'s');
+  updateProdPanel();populateBatchSelect();populateMatLotSelect();updateRMPanel();renderRawMat('');
 }
 function clearProd(){
-  ['p-qty','p-note'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('p-dmg').value='0';
+  ['p-qty','p-note','p-mat-qty'].forEach(id=>document.getElementById(id).value='');
   setDates();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
+  populateMatLotSelect();
   updateBatchMetricsPreview();
 }
 function updateProdPanel(){
   document.getElementById('p-count').textContent=DB.production.length;
   document.getElementById('p-total').textContent=DB.production.reduce((a,p)=>a+p.qty,0).toLocaleString();
-  document.getElementById('p-tdmg').textContent=DB.production.reduce((a,p)=>a+p.damaged,0).toLocaleString();
+  populateMatLotSelect();
   updateBatchMetricsPreview();
 }
 
@@ -1831,7 +2364,7 @@ function prefillUnitCost(){
 }
 function submitRawMat(){
   ['rm-ok','rm-err'].forEach(id=>document.getElementById(id).classList.remove('show'));
-  const date=document.getElementById('rm-date').value;
+  const date=document.getElementById('rm-date').value || TODAY;
   const batch=document.getElementById('rm-batch').value;
   const category=document.getElementById('rm-cat').value;
   const unitCost=parseFloat(document.getElementById('rm-cost').value)||0;
@@ -1845,12 +2378,13 @@ function submitRawMat(){
   const amount=qtyKg*unitCost;
   DB.rawmats.push({id:DB.nid(),date,batch,category,noRoll,qtyKg,unitCost,amount,rolls,note,staff:CU.name,staffId:CU.id});
   showOk('rm-ok');clearRawMat();toast('Material usage logged!','s');
-  updateRMPanel();renderRawMat('');updateBatchMetricsPreview();
+  updateRMPanel();renderRawMat('');updateBatchMetricsPreview();populateMatLotSelect();
 }
 function clearRawMat(){
   document.getElementById('rm-note').value='';
   resetRollRows();
-  const el=document.getElementById('rm-date');if(el)el.value=new Date().toISOString().split('T')[0];
+  const el=document.getElementById('rm-date');if(el)el.value='';
+  const lbl=document.getElementById('rm-date-label');if(lbl)lbl.textContent='Today';
 }
 function updateRMPanel(){
   document.getElementById('rm-count').textContent=DB.rawmats.length;
@@ -1879,8 +2413,56 @@ function renderRawMat(q){
 
 
 /* EXPENSE */
+/* EXPENSE CATEGORIES — base list + manager-added custom categories (persisted) */
+const EXP_CATS_BASE = ['Operator','Fuel','Repair','Driver','Maintenance','Equipment & Machinery',
+  'Labor & Staff','Logistics','Regulatory','Admin','Marketing','Security','Miscellaneous'];
+
+function loadCustomExpCats(){
+  try{
+    const raw = localStorage.getItem('xcel_exp_cats');
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveCustomExpCats(arr){
+  try{ localStorage.setItem('xcel_exp_cats', JSON.stringify(arr)); }catch(e){}
+}
+let CUSTOM_EXP_CATS = loadCustomExpCats();
+
+function populateExpCats(selectVal){
+  const sel = document.getElementById('e-cat');
+  if(!sel) return;
+  const prev = selectVal !== undefined ? selectVal : sel.value;
+  const all = EXP_CATS_BASE.concat(CUSTOM_EXP_CATS);
+  sel.innerHTML = all.map(c=>`<option>${c}</option>`).join('');
+  if(prev && all.includes(prev)) sel.value = prev;
+}
+
+function promptAddCat(){
+  document.getElementById('addcat-input').value='';
+  document.getElementById('addcat-err').style.display='none';
+  document.getElementById('addcat-mo').classList.add('open');
+  setTimeout(()=>document.getElementById('addcat-input').focus(),50);
+}
+function closeAddCatMo(){ document.getElementById('addcat-mo').classList.remove('open'); }
+function confirmAddCat(){
+  const input = document.getElementById('addcat-input');
+  const name = input.value.trim();
+  const errEl = document.getElementById('addcat-err');
+  const errMsg = document.getElementById('addcat-err-msg');
+  if(!name){ errMsg.textContent='Enter a category name'; errEl.style.display='flex'; return; }
+  const all = EXP_CATS_BASE.concat(CUSTOM_EXP_CATS);
+  if(all.some(c=>c.toLowerCase()===name.toLowerCase())){
+    errMsg.textContent='That category already exists'; errEl.style.display='flex'; return;
+  }
+  CUSTOM_EXP_CATS.push(name);
+  saveCustomExpCats(CUSTOM_EXP_CATS);
+  populateExpCats(name);
+  closeAddCatMo();
+  toast('Category "'+name+'" added','s');
+}
+
 function submitExp(){
-  const date=document.getElementById('e-date').value;
+  const date=document.getElementById('e-date').value || TODAY;
   const cat=document.getElementById('e-cat').value;
   const desc=document.getElementById('e-desc').value.trim();
   const amt=parseFloat(document.getElementById('e-amt').value);
@@ -1906,81 +2488,173 @@ function updateExpPanel(){
 
 /* MY SALES */
 function renderMySales(){
-  const d=DB.sales.filter(s=>s.staffId===CU.id);
-  document.getElementById('my-rev').textContent='₦'+d.reduce((a,s)=>a+s.amount,0).toLocaleString();
-  document.getElementById('my-txn').textContent=d.length;
-  document.getElementById('my-bags').textContent=d.reduce((a,s)=>a+s.qty,0).toLocaleString();
+  const all=DB.sales.filter(s=>s.staffId===CU.id && inDR('mysales',s.date));
+  const active=all.filter(s=>!s.voided);
+  document.getElementById('my-rev').textContent='₦'+active.reduce((a,s)=>a+s.amount,0).toLocaleString();
+  document.getElementById('my-txn').textContent=active.length;
+  document.getElementById('my-bags').textContent=active.reduce((a,s)=>a+(s.type==='supply'?s.sold:s.qty),0).toLocaleString();
   const tb=document.getElementById('my-tbody');
-  if(!d.length){tb.innerHTML='<tr><td colspan="7"><div class="empty"><i class="ti ti-shopping-cart"></i><p>No sales yet this session</p></div></td></tr>';return;}
-  tb.innerHTML=d.slice().reverse().map(s=>`<tr>
-    <td>${fmtDate(s.date)}</td><td>${s.product}</td><td>${s.qty}</td>
+  if(!all.length){tb.innerHTML='<tr><td colspan="8"><div class="empty"><i class="ti ti-shopping-cart"></i><p>No sales yet this session</p></div></td></tr>';return;}
+  tb.innerHTML=all.slice().reverse().map(s=>{
+    const v=s.voided;
+    const sty=v?'style="text-decoration:line-through;opacity:.55"':'';
+    if(s.type==='supply'){
+      return `<tr ${sty}>
+        <td><span class="badge ba">Supply</span></td><td>${fmtDate(s.date)}</td><td>${s.product}</td><td>${s.sold} sold / ${s.carried} carried</td>
+        <td>₦${s.price.toLocaleString()}</td>
+        <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
+        <td>${s.leak>0?`<span style="color:var(--red);font-weight:500">${s.leak} leak</span>`:'—'}</td>
+        <td><span class="badge ${s.method==='CASH'?'bg':s.method==='TRANSFER'?'bb':s.method==='POS'?'bt':'ba'}">${s.method.replace('_',' + ')}</span></td>
+      </tr>`;
+    }
+    return `<tr ${sty}>
+    <td><span class="badge bg">Walk-in</span></td><td>${fmtDate(s.date)}</td><td>${s.product}</td><td>${s.qty}</td>
     <td>₦${s.price.toLocaleString()}</td>
     <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
     <td>${s.damaged>0?`<span style="color:var(--red);font-weight:500">${s.damaged}</span>`:'—'}</td>
     <td><span class="badge ${s.method==='CASH'?'bg':s.method==='TRANSFER'?'bb':s.method==='POS'?'bt':'ba'}">${s.method}</span></td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
 }
 
 /* RECENT SALES (on the Record Sale page itself) */
+let recentSalesScope='today';
+function setRecentSalesScope(scope){
+  recentSalesScope=scope;
+  document.getElementById('rs-scope-today').classList.toggle('sel', scope==='today');
+  document.getElementById('rs-scope-all').classList.toggle('sel', scope==='all');
+  const inp=document.getElementById('rs-search');
+  renderRecentSales(inp?inp.value:'');
+}
 function renderRecentSales(q){
   if(!CU)return;
   const tb=document.getElementById('recent-sales-tbody');
   if(!tb)return;
   q=(q||'').trim().toLowerCase();
   const d=DB.sales.filter(s=>s.staffId===CU.id &&
-    (!q || [s.saleId,s.product,s.method,s.note].join(' ').toLowerCase().includes(q)));
+    (recentSalesScope==='all' || s.date===TODAY) &&
+    (!q || [s.saleId,s.product,s.method,s.note,s.driver].join(' ').toLowerCase().includes(q)));
   if(!d.length){
-    tb.innerHTML=`<tr><td colspan="7"><div class="empty"><i class="ti ti-receipt"></i><p>${q?'No matching sales found':'No sales recorded yet this session'}</p></div></td></tr>`;
+    tb.innerHTML=`<tr><td colspan="8"><div class="empty"><i class="ti ti-receipt"></i><p>${q?'No matching sales found':(recentSalesScope==='today'?'No sales recorded yet today':'No sales recorded yet')}</p></div></td></tr>`;
     return;
   }
-  tb.innerHTML=d.slice().reverse().map(s=>`<tr>
+  tb.innerHTML=d.slice().reverse().map(s=>{
+    const v=s.voided;
+    const sty=v?'style="text-decoration:line-through;opacity:.55"':'';
+    const typeBadge=s.type==='supply'?'<span class="badge ba">Supply</span>':'<span class="badge bg">Walk-in</span>';
+    if(s.type==='supply'){
+      return `<tr ${sty}>
+        <td><button class="btn btn-outline btn-sm" onclick="reprintSale(${s.id})" title="Print receipt" style="gap:4px"><i class="ti ti-printer"></i> Print</button></td>
+        <td style="font-family:'DM Mono',monospace;font-size:11.5px;color:var(--txt3)">${s.saleId}</td>
+        <td>${typeBadge}</td><td>${fmtDate(s.date)}</td><td>${s.product}</td><td>${s.sold}/${s.carried}</td>
+        <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
+        <td><span class="badge ${s.method==='CASH'?'bg':s.method==='TRANSFER'?'bb':s.method==='POS'?'bt':'ba'}">${s.method.replace('_',' + ')}</span></td>
+      </tr>`;
+    }
+    return `<tr ${sty}>
     <td><button class="btn btn-outline btn-sm" onclick="reprintSale(${s.id})" title="Print receipt" style="gap:4px"><i class="ti ti-printer"></i> Print</button></td>
     <td style="font-family:'DM Mono',monospace;font-size:11.5px;color:var(--txt3)">${s.saleId}</td>
+    <td>${typeBadge}</td>
     <td>${fmtDate(s.date)}</td>
     <td>${s.product}</td>
     <td>${s.qty}</td>
     <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
     <td><span class="badge ${s.method==='CASH'?'bg':s.method==='TRANSFER'?'bb':s.method==='POS'?'bt':'ba'}">${s.method.replace('_',' + ')}</span></td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
 }
 
 /* ALL SALES */
 function renderAS(q){
-  const d=DB.sales.filter(s=>!q||[s.product,s.staff,s.method,s.note].join(' ').toLowerCase().includes(q.toLowerCase()));
+  const d=DB.sales.filter(s=>inDR('asales',s.date) && (!q||[s.product,s.staff,s.method,s.note,s.driver].join(' ').toLowerCase().includes(q.toLowerCase())));
   const tb=document.getElementById('as-tbody');
-  if(!d.length){tb.innerHTML='<tr><td colspan="10"><div class="empty"><i class="ti ti-table"></i><p>No sales recorded yet</p></div></td></tr>';return;}
+  if(!d.length){tb.innerHTML='<tr><td colspan="15"><div class="empty"><i class="ti ti-table"></i><p>No sales recorded yet</p></div></td></tr>';return;}
   const mBadge = m => {
     if(m==='CASH') return 'bg';
     if(m==='TRANSFER') return 'bb';
     if(m==='POS') return 'bt';
     return 'ba';
   };
-  tb.innerHTML=d.slice().reverse().map(s=>`<tr>
-    <td>${fmtDate(s.date)}</td><td>${s.staff}</td><td>${s.product}</td>
+  const canVoid = CU && CU.role!=='staff';
+  tb.innerHTML=d.slice().reverse().map(s=>{
+    const v=s.voided;
+    const sty=v?'style="text-decoration:line-through;opacity:.55"':'';
+    const voidBtn = canVoid
+      ? (v
+          ? `<button class="btn btn-outline btn-sm" onclick="promptVoid(${s.id})" title="Restore"><i class="ti ti-rotate"></i></button>`
+          : `<button class="btn btn-outline btn-sm" onclick="promptVoid(${s.id})" title="Void sale"><i class="ti ti-ban"></i></button>`)
+      : '';
+    if(s.type==='supply'){
+      return `<tr ${sty}>
+        <td>${fmtDate(s.date)}</td><td>${s.staff}</td><td><span class="badge ba">Supply${s.driver?' · '+s.driver:''}</span></td>
+        <td>${s.product}</td><td>${s.sold} sold / ${s.carried} carried</td>
+        <td>₦${s.price.toLocaleString()}</td>
+        <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
+        <td>—</td>
+        <td><span class="badge ${mBadge(s.method)}">${s.method.replace('_',' + ')}</span></td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px">${s.carried}/${s.leak}/${s.leakEx}/${s.extra}</td>
+        <td>—</td><td>—</td><td>—</td>
+        <td style="color:var(--txt3);font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.note||'—'}</td>
+        <td style="display:flex;gap:5px">${voidBtn}<button class="btn btn-danger btn-sm" onclick="promptDel('sales',${s.id})"><i class="ti ti-trash"></i></button></td>
+      </tr>`;
+    }
+    return `<tr ${sty}>
+    <td>${fmtDate(s.date)}</td><td>${s.staff}</td><td><span class="badge bg">Walk-in</span></td><td>${s.product}</td>
     <td>${s.qty}</td><td>₦${s.price.toLocaleString()}</td>
     <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
     <td>${s.damaged>0?`<span style="color:var(--red)">${s.damaged}</span>`:'—'}</td>
     <td><span class="badge ${`${mBadge(s.method)}`}">${s.method.replace('_',' + ')}</span></td>
+    <td>—</td>
     <td style="font-family:'DM Mono',monospace;font-size:12px">${s.cashReceived>0?'₦'+s.cashReceived.toLocaleString():'—'}</td>
     <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--red)">${s.changeGiven>0?'₦'+s.changeGiven.toLocaleString():'—'}</td>
     <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--grn)">${s.netCash>0?'₦'+s.netCash.toLocaleString():'—'}</td>
     <td style="color:var(--txt3);font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.note||'—'}</td>
-    <td><button class="btn btn-danger btn-sm" onclick="promptDel('sales',${s.id})"><i class="ti ti-trash"></i></button></td>
-  </tr>`).join('');
+    <td style="display:flex;gap:5px">${voidBtn}<button class="btn btn-danger btn-sm" onclick="promptDel('sales',${s.id})"><i class="ti ti-trash"></i></button></td>
+  </tr>`;
+  }).join('');
+}
+
+/* VOID SALE (manager/admin only) — reversible, struck-through, excluded from totals */
+let voidTargetId=null;
+function promptVoid(id){
+  const s=DB.sales.find(x=>x.id===id);
+  if(!s)return;
+  voidTargetId=id;
+  const isVoided=s.voided;
+  document.getElementById('void-mo-title').textContent = isVoided ? 'Restore this sale?' : 'Void this sale?';
+  document.getElementById('void-mo-text').textContent = isVoided
+    ? 'The sale will be restored and counted in totals again.'
+    : 'The sale will be struck through and excluded from totals. It stays on record and can be restored at any time.';
+  document.getElementById('void-mo-btn').innerHTML = isVoided
+    ? '<i class="ti ti-rotate"></i> Yes, restore sale'
+    : '<i class="ti ti-ban"></i> Yes, void sale';
+  document.getElementById('void-mo').classList.add('open');
+}
+function closeVoidMo(){document.getElementById('void-mo').classList.remove('open');voidTargetId=null;}
+function confirmVoid(){
+  const s=DB.sales.find(x=>x.id===voidTargetId);
+  if(!s){closeVoidMo();return;}
+  s.voided=!s.voided;
+  if(s.voided){ s.voidedBy=CU.name; s.voidedAt=Date.now(); }
+  else { delete s.voidedBy; delete s.voidedAt; }
+  closeVoidMo();
+  toast(s.voided?'Sale voided':'Sale restored','s');
+  renderAS('');
+  renderDash();
 }
 
 /* ALL PRODUCTION */
 function renderAP(){
-  const d=DB.production;const tb=document.getElementById('ap-tbody');
+  const d=DB.production.filter(p=>inDR('aprod',p.date));const tb=document.getElementById('ap-tbody');
   if(!d.length){tb.innerHTML='<tr><td colspan="12"><div class="empty"><i class="ti ti-packages"></i><p>No batches logged yet</p></div></td></tr>';return;}
   tb.innerHTML=d.slice().reverse().map(p=>{
     const m=calcBatchMetrics(p.batch);
     return`<tr>
     <td>${fmtDate(p.date)}</td>
     <td style="font-family:'DM Mono',monospace;font-size:12px">${p.batch}</td>
-    <td><span class="badge bt">${p.material}</span></td>
+    <td>${p.matLotId?`<span class="badge bt">${p.matLotLabel}</span>`:'—'}</td>
+    <td>${p.matQtyUsed>0?p.matQtyUsed.toFixed(2)+' kg':'—'}</td>
     <td>${p.type}</td><td style="font-weight:600">${p.qty.toLocaleString()}</td>
-    <td>${p.damaged>0?`<span style="color:var(--red)">${p.damaged}</span>`:'—'}</td>
     <td style="font-weight:600">${m.totalCost>0?'₦'+m.totalCost.toLocaleString(undefined,{maximumFractionDigits:2}):'—'}</td>
     <td>${m.totalKg>0?m.totalKg.toFixed(2)+' kg':'—'}</td>
     <td>${m.totalKg>0?m.perKg.toFixed(2):'—'}</td>
@@ -1992,7 +2666,7 @@ function renderAP(){
 
 /* ALL EXPENSES */
 function renderAE(){
-  const d=DB.expenses;const tb=document.getElementById('ae-tbody');
+  const d=DB.expenses.filter(e=>inDR('aexp',e.date));const tb=document.getElementById('ae-tbody');
   const BC={Operator:'bb',Fuel:'bt',Repair:'br',Driver:'ba',Maintenance:'bb','Equipment & Machinery':'bt'};
   if(!d.length){tb.innerHTML='<tr><td colspan="8"><div class="empty"><i class="ti ti-receipt-2"></i><p>No expenses yet</p></div></td></tr>';return;}
   tb.innerHTML=d.slice().reverse().map(e=>`<tr>
@@ -2008,12 +2682,16 @@ function renderAE(){
 
 /* DASHBOARD */
 function renderDash(){
-  const rev=DB.sales.reduce((a,s)=>a+s.amount,0);
-  const prod=DB.production.reduce((a,p)=>a+p.qty,0);
-  const sold=DB.sales.reduce((a,s)=>a+s.qty,0);
-  const exp=DB.expenses.reduce((a,e)=>a+e.amount,0);
-  const matCost=DB.rawmats.reduce((a,r)=>a+r.amount,0);
-  const dmg=DB.sales.reduce((a,s)=>a+s.damaged,0)+DB.production.reduce((a,p)=>a+p.damaged,0);
+  const activeSales=DB.sales.filter(s=>!s.voided && inDR('dash',s.date));
+  const dashProd=DB.production.filter(p=>inDR('dash',p.date));
+  const dashExp=DB.expenses.filter(e=>inDR('dash',e.date));
+  const dashRM=DB.rawmats.filter(r=>inDR('dash',r.date));
+  const rev=activeSales.reduce((a,s)=>a+(s.amount||0),0);
+  const prod=dashProd.reduce((a,p)=>a+p.qty,0);
+  const sold=activeSales.reduce((a,s)=>a+(s.type==='supply'?s.sold:s.qty),0);
+  const exp=dashExp.reduce((a,e)=>a+e.amount,0);
+  const matCost=dashRM.reduce((a,r)=>a+r.amount,0);
+  const dmg=activeSales.reduce((a,s)=>a+(s.damaged||0),0);
   const profit=rev-exp-matCost;
   document.getElementById('d-rev').textContent='₦'+rev.toLocaleString();
   document.getElementById('d-prod').textContent=prod.toLocaleString();
@@ -2024,9 +2702,9 @@ function renderDash(){
   document.getElementById('d-profit').textContent=(profit>=0?'₦':'-₦')+Math.abs(profit).toLocaleString();
   document.querySelector('#page-dash .mc:last-child').className='mc '+(profit>=0?'g':'r');
 
-  const cash=DB.sales.filter(s=>s.method==='CASH').reduce((a,s)=>a+s.amount,0);
-  const xfer=DB.sales.filter(s=>s.method==='TRANSFER').reduce((a,s)=>a+s.amount,0);
-  const pos=DB.sales.filter(s=>s.method==='POS').reduce((a,s)=>a+s.amount,0);
+  const cash=activeSales.filter(s=>s.method==='CASH').reduce((a,s)=>a+s.amount,0);
+  const xfer=activeSales.filter(s=>s.method==='TRANSFER').reduce((a,s)=>a+s.amount,0);
+  const pos=activeSales.filter(s=>s.method==='POS').reduce((a,s)=>a+s.amount,0);
   if(chPay)chPay.destroy();
   chPay=new Chart(document.getElementById('ch-pay'),{
     type:'doughnut',
@@ -2034,7 +2712,7 @@ function renderDash(){
     options:{responsive:true,maintainAspectRatio:false,cutout:'64%',plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'DM Sans'},boxWidth:10,padding:12,color:'#546050'}}}}
   });
 
-  const cats={};DB.expenses.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amount;});
+  const cats={};dashExp.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amount;});
   const CC={Operator:'#7F77DD',Fuel:'#1D9E75',Repair:'#c03838',Driver:'#c08a18',Maintenance:'#2d58c2','Equipment & Machinery':'#888',Miscellaneous:'#96a48e'};
   if(chExp)chExp.destroy();
   chExp=new Chart(document.getElementById('ch-exp'),{
@@ -2100,9 +2778,9 @@ function confirmDel(){
   DB[delType]=DB[delType].filter(r=>r.id!==delT.id);
   closeMo();toast('Record deleted','s');
   if(delType==='sales')renderAS('');
-  if(delType==='production'){renderAP();populateBatchSelect();updateBatchMetricsPreview();}
+  if(delType==='production'){renderAP();populateBatchSelect();updateBatchMetricsPreview();populateMatLotSelect();}
   if(delType==='expenses')renderAE();
-  if(delType==='rawmats'){renderRawMat('');updateRMPanel();updateBatchMetricsPreview();renderAP();}
+  if(delType==='rawmats'){renderRawMat('');updateRMPanel();updateBatchMetricsPreview();renderAP();populateMatLotSelect();}
 }
 
 /* EXPORT */
@@ -2300,6 +2978,8 @@ function geoTestMyPos(){
     {timeout:12000,maximumAge:0,enableHighAccuracy:true}
   );
 }
+
+initDRBars();
 </script>
 </body>
 </html>
