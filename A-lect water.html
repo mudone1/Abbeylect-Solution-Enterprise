@@ -9,6 +9,36 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.1/JsBarcode.all.min.js"></script>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCBLFD-b_4FG0JlMeIy2iIgKMLr3w7LHYY",
+    authDomain: "spring-xcel-water.firebaseapp.com",
+    projectId: "spring-xcel-water",
+    storageBucket: "spring-xcel-water.firebasestorage.app",
+    messagingSenderId: "413128829523",
+    appId: "1:413128829523:web:99443b9de7a10d424c74a6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  window.FSDB        = db;
+  window.fsCol       = (name) => collection(db, name);
+  window.fsAddDoc    = addDoc;
+  window.fsGetDocs   = getDocs;
+  window.fsDeleteDoc = deleteDoc;
+  window.fsDoc       = (col, id) => doc(db, col, id);
+  window.fsUpdateDoc = updateDoc;
+  window.fsReady     = true;
+  // Signal the main script that Firebase is ready
+  document.dispatchEvent(new Event('firebase-ready'));
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -519,11 +549,11 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <div id="walkin-fields" style="display:contents">
                 <div class="field">
                   <label>Product</label>
-                  <select id="s-product" onchange="updateR()">
-                    <option>Pure water 50L</option><option>Dispenser water</option><option>Bottle water 50CL</option>
+                  <select id="s-product" onchange="updateR();updateStockHint()">
+                    <option>Pure water 50CL</option><option>Dispenser water</option><option>Bottle water 50CL</option>
                   </select>
                 </div>
-                <div class="field"><label>Quantity (bags)</label><input type="number" id="s-qty" placeholder="e.g. 50" min="1" oninput="updateR()"></div>
+                <div class="field"><label>Quantity (bags)</label><input type="number" id="s-qty" placeholder="e.g. 50" min="1" oninput="updateR();updateStockHint()"><div id="s-stock-hint" style="margin-top:5px;font-size:12px;color:var(--txt3)"></div></div>
                 <div class="field"><label>Price per bag (₦)</label><input type="number" id="s-price" placeholder="e.g. 210" min="0" oninput="updateR()"></div>
                 <div class="field"><label>Damaged / returned</label><input type="number" id="s-dmg" value="0" min="0" oninput="updateR()"></div>
 
@@ -576,11 +606,11 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 </div>
                 <div class="field">
                   <label>Product</label>
-                  <select id="sp-product">
-                    <option>Pure water 50L</option><option>Dispenser water</option><option>Bottle water 50CL</option>
+                  <select id="sp-product" onchange="updateR();updateStockHint()">
+                    <option>Pure water 50CL</option><option>Dispenser water</option><option>Bottle water 50CL</option>
                   </select>
                 </div>
-                <div class="field"><label>Qty of bags carried</label><input type="number" id="sp-carried" placeholder="e.g. 100" min="0" oninput="updateR()"></div>
+                <div class="field"><label>Qty of bags carried</label><input type="number" id="sp-carried" placeholder="e.g. 100" min="0" oninput="updateR();updateStockHint()"><div id="sp-stock-hint" style="margin-top:5px;font-size:12px;color:var(--txt3)"></div></div>
                 <div class="field"><label>Qty sold</label><input type="number" id="sp-sold" placeholder="e.g. 92" min="0" oninput="updateR()"></div>
                 <div class="field"><label>Price per bag (₦)</label><input type="number" id="sp-price" placeholder="e.g. 210" min="0" oninput="updateR()"></div>
                 <div class="field"><label>Qty leakage</label><input type="number" id="sp-leak" value="0" min="0" oninput="updateR()"></div>
@@ -745,7 +775,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                   <div style="font-size:11px;color:var(--amb-m);margin-top:6px" id="p-mat-packing-hint">Select a packing lot to see availability</div>
                 </div>
                 <div class="field"><label>Product type</label>
-                  <select id="p-type"><option>Pure water 50L</option><option>Dispenser water</option><option>Bottle water 50CL</option></select>
+                  <select id="p-type"><option>Pure water 50CL</option><option>Dispenser water</option><option>Bottle water 50CL</option></select>
                 </div>
                 <div class="field"><label>Qty produced (bags)</label><input type="number" id="p-qty" placeholder="e.g. 400" min="1" oninput="updateBatchMetricsPreview()"></div>
                 <div class="field full"><label>Notes</label><input type="text" id="p-note" placeholder="Operator notes, machine status…"></div>
@@ -762,13 +792,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="srow"><span class="sl">Batches logged</span><span class="sv" id="p-count">0</span></div>
               <div class="srow"><span class="sl">Total bags produced</span><span class="sv" id="p-total">0</span></div>
             </div>
-            <div class="r-head" style="border-top:1px solid var(--sb-brd)"><h3><i class="ti ti-calculator" style="color:#4d9aff"></i> This batch — cost of material</h3></div>
-            <div class="r-body">
-              <div class="srow"><span class="sl">Total qty prod</span><span class="sv" id="p-batchqty">0</span></div>
-              <div class="srow"><span class="sl">Total material cost</span><span class="sv" id="p-batchcost">₦0</span></div>
-              <div class="srow"><span class="sl">Production per KG</span><span class="sv" id="p-batchperkg">—</span></div>
-            </div>
-            <div class="r-lock" style="margin:0 1.2rem 1.2rem"><i class="ti ti-info-circle" style="font-size:11px"></i> Material cost updates once rolls are logged on the <b>Raw Material Inventory</b> tab</div>
+
           </div>
         </div>
       </div>
@@ -894,9 +918,15 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           </div>
           <div class="mrow" id="inv-mrow">
             <div class="mc b"><div class="mc-ico"><i class="ti ti-stack-2"></i></div><div class="mc-lbl">Total lots</div><div class="mc-val" id="inv-lots">0</div><div class="mc-sub">entries logged</div></div>
-            <div class="mc g"><div class="mc-ico"><i class="ti ti-weight"></i></div><div class="mc-lbl">Total KG received</div><div class="mc-val" id="inv-kg-in">0.00</div><div class="mc-sub">kg</div></div>
-            <div class="mc a"><div class="mc-ico"><i class="ti ti-flame"></i></div><div class="mc-lbl">KG consumed</div><div class="mc-val" id="inv-kg-used">0.00</div><div class="mc-sub">in production</div></div>
-            <div class="mc t"><div class="mc-ico"><i class="ti ti-archive"></i></div><div class="mc-lbl">KG remaining</div><div class="mc-val" id="inv-kg-left">0.00</div><div class="mc-sub">available stock</div></div>
+            <div class="mc g"><div class="mc-ico"><i class="ti ti-weight"></i></div><div class="mc-lbl">Sachet KG received</div><div class="mc-val" id="inv-kg-in">0.00</div><div class="mc-sub">kg</div></div>
+            <div class="mc a"><div class="mc-ico"><i class="ti ti-flame"></i></div><div class="mc-lbl">Sachet KG consumed</div><div class="mc-val" id="inv-kg-used">0.00</div><div class="mc-sub">in production</div></div>
+            <div class="mc t"><div class="mc-ico"><i class="ti ti-archive"></i></div><div class="mc-lbl">Sachet KG remaining</div><div class="mc-val" id="inv-kg-left">0.00</div><div class="mc-sub">available stock</div></div>
+          </div>
+          <div class="mrow" style="margin-top:0.5rem">
+            <div class="mc a"><div class="mc-ico"><i class="ti ti-package"></i></div><div class="mc-lbl">Bundles received</div><div class="mc-val" id="inv-pb-in">0</div><div class="mc-sub">packing bags</div></div>
+            <div class="mc r"><div class="mc-ico"><i class="ti ti-flame"></i></div><div class="mc-lbl">Bundles consumed</div><div class="mc-val" id="inv-pb-used">0</div><div class="mc-sub">in production</div></div>
+            <div class="mc g"><div class="mc-ico"><i class="ti ti-archive"></i></div><div class="mc-lbl">Bundles remaining</div><div class="mc-val" id="inv-pb-left">0</div><div class="mc-sub" id="inv-pb-packs-sub">0 packs available</div></div>
+            <div class="mc b"><div class="mc-ico"><i class="ti ti-stack-2"></i></div><div class="mc-lbl">Active packing lots</div><div class="mc-val" id="inv-pb-lots">0</div><div class="mc-sub">with bundles left</div></div>
           </div>
           <div class="card" style="padding:0;overflow:hidden">
             <div style="padding:.9rem 1.2rem;background:var(--surf2);border-bottom:1.5px solid var(--brd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px">
@@ -965,15 +995,35 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <div class="page" id="page-mysales">
         <div class="ph"><div><div class="ph-title">My sales</div><div class="ph-sub">Sales you have recorded this session</div></div></div>
         <div class="dr-bar" id="dr-bar-mysales"></div>
-        <div class="mrow" style="max-width:540px;margin-bottom:1.5rem">
-          <div class="mc b"><div class="mc-ico"><i class="ti ti-cash"></i></div><div class="mc-lbl">My revenue</div><div class="mc-val" id="my-rev">₦0</div><div class="mc-sub">this session</div></div>
+        <div class="mrow" style="margin-bottom:1.5rem">
+          <div class="mc b"><div class="mc-ico"><i class="ti ti-cash"></i></div><div class="mc-lbl">My revenue</div><div class="mc-val" id="my-rev">₦0</div><div class="mc-sub">all sales</div></div>
           <div class="mc g"><div class="mc-ico"><i class="ti ti-shopping-cart"></i></div><div class="mc-lbl">Transactions</div><div class="mc-val" id="my-txn">0</div><div class="mc-sub">entries</div></div>
           <div class="mc a"><div class="mc-ico"><i class="ti ti-packages"></i></div><div class="mc-lbl">Bags sold</div><div class="mc-val" id="my-bags">0</div><div class="mc-sub">units</div></div>
+          <div class="mc t"><div class="mc-ico"><i class="ti ti-truck-delivery"></i></div><div class="mc-lbl">Driver trips</div><div class="mc-val" id="my-drv-trips">0</div><div class="mc-sub">supply runs</div></div>
+          <div class="mc r"><div class="mc-ico"><i class="ti ti-droplet-off"></i></div><div class="mc-lbl">Total leakage</div><div class="mc-val" id="my-drv-leak">0</div><div class="mc-sub">bags lost</div></div>
+          <div class="mc a"><div class="mc-ico"><i class="ti ti-receipt"></i></div><div class="mc-lbl">Outstanding bags</div><div class="mc-val" id="my-drv-outstanding">0</div><div class="mc-sub">yet to return</div></div>
         </div>
-        <div class="card" style="padding:0;overflow:hidden">
+
+        <!-- WALK-IN SALES -->
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:1.1rem">
+          <div style="padding:.75rem 1.2rem;background:var(--surf2);border-bottom:1.5px solid var(--brd)">
+            <div class="card-title" style="margin:0"><i class="ti ti-building-store" style="color:var(--grn-m)"></i> Walk-in (Factory) Sales</div>
+          </div>
           <div class="tw"><table class="dt">
-            <thead><tr><th>Type</th><th>Date</th><th>Product</th><th>Qty</th><th>Price</th><th>Amount</th><th>Damaged</th><th>Method</th></tr></thead>
-            <tbody id="my-tbody"><tr><td colspan="8"><div class="empty"><i class="ti ti-shopping-cart"></i><p>No sales recorded yet</p></div></td></tr></tbody>
+            <thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Price</th><th>Amount</th><th>Damaged</th><th>Method</th></tr></thead>
+            <tbody id="my-walkin-tbody"><tr><td colspan="7"><div class="empty"><i class="ti ti-building-store"></i><p>No walk-in sales recorded yet</p></div></td></tr></tbody>
+          </table></div>
+        </div>
+
+        <!-- DRIVER SUPPLY SALES -->
+        <div style="font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px"><i class="ti ti-truck-delivery" style="font-size:13px;color:#c08a18"></i> Driver Supply Sales</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:.75rem 1.2rem;background:var(--surf2);border-bottom:1.5px solid var(--brd)">
+            <div class="card-title" style="margin:0"><i class="ti ti-user-check" style="color:#c08a18"></i> Supply trip log</div>
+          </div>
+          <div class="tw"><table class="dt">
+            <thead><tr><th>Date</th><th>Driver</th><th>Product</th><th>Carried</th><th>Sold</th><th>Sell Rate</th><th>Leakage</th><th>Exch</th><th>Outstanding</th><th>Price</th><th>Amount</th><th>Method</th></tr></thead>
+            <tbody id="my-supply-tbody"><tr><td colspan="12"><div class="empty"><i class="ti ti-truck-delivery"></i><p>No supply trips recorded yet</p></div></td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -995,22 +1045,50 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           <div class="mc g"><div class="mc-ico"><i class="ti ti-trending-up"></i></div><div class="mc-lbl">Net profit</div><div class="mc-val" id="d-profit">₦0</div><div class="mc-sub">rev − costs</div></div>
         </div>
 
+        <!-- DRIVER SALES ANALYSIS -->
+        <div style="font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;margin-top:.2rem;display:flex;align-items:center;gap:6px"><i class="ti ti-truck-delivery" style="font-size:13px;color:#c08a18"></i> Driver Sales Analysis</div>
+        <div class="mrow" style="margin-top:0;margin-bottom:.5rem">
+          <div class="mc a"><div class="mc-ico"><i class="ti ti-truck-delivery"></i></div><div class="mc-lbl">Supply trips</div><div class="mc-val" id="d-drv-trips">0</div><div class="mc-sub">dispatch runs</div></div>
+          <div class="mc b"><div class="mc-ico"><i class="ti ti-packages"></i></div><div class="mc-lbl">Bags carried</div><div class="mc-val" id="d-drv-carried">0</div><div class="mc-sub">total dispatched</div></div>
+          <div class="mc g"><div class="mc-ico"><i class="ti ti-shopping-cart"></i></div><div class="mc-lbl">Bags sold</div><div class="mc-val" id="d-drv-sold">0</div><div class="mc-sub">by drivers</div></div>
+          <div class="mc r"><div class="mc-ico"><i class="ti ti-droplet-off"></i></div><div class="mc-lbl">Leakage</div><div class="mc-val" id="d-drv-leak">0</div><div class="mc-sub">bags lost</div></div>
+          <div class="mc t"><div class="mc-ico"><i class="ti ti-receipt"></i></div><div class="mc-lbl">Outstanding bags</div><div class="mc-val" id="d-drv-outstanding">0</div><div class="mc-sub">yet to return</div></div>
+          <div class="mc g"><div class="mc-ico"><i class="ti ti-cash"></i></div><div class="mc-lbl">Driver revenue</div><div class="mc-val" id="d-drv-rev">₦0</div><div class="mc-sub">from supply sales</div></div>
+        </div>
+        <div class="card card-sm" style="margin-bottom:1.1rem;padding:0;overflow:hidden">
+          <div style="padding:.75rem 1.2rem;background:var(--surf2);border-bottom:1.5px solid var(--brd);display:flex;align-items:center;justify-content:space-between">
+            <div class="card-title" style="margin:0"><i class="ti ti-user-check" style="color:#c08a18"></i> Per-driver breakdown</div>
+          </div>
+          <div class="tw"><table class="dt">
+            <thead><tr><th>Driver</th><th>Trips</th><th>Product</th><th>Carried</th><th>Sold</th><th>Sell Rate</th><th>Leakage</th><th>Outstanding</th><th>Revenue</th><th>Method</th></tr></thead>
+            <tbody id="d-drv-tbody"><tr><td colspan="10"><div class="empty"><i class="ti ti-truck-delivery"></i><p>No driver supply sales recorded yet</p></div></td></tr></tbody>
+          </table></div>
+        </div>
+
         <!-- RAW MATERIAL ANALYSIS -->
+        <div style="font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px"><i class="ti ti-layers-subtract" style="font-size:13px;color:#1a5fcb"></i> Sachet Bags — KG inventory</div>
         <div class="mrow" style="margin-top:0">
           <div class="mc t"><div class="mc-ico"><i class="ti ti-weight"></i></div><div class="mc-lbl">Total KG received</div><div class="mc-val" id="d-rm-in">0.00</div><div class="mc-sub">all time</div></div>
           <div class="mc a"><div class="mc-ico"><i class="ti ti-flame"></i></div><div class="mc-lbl">KG utilized</div><div class="mc-val" id="d-rm-used">0.00</div><div class="mc-sub">in production</div></div>
           <div class="mc g"><div class="mc-ico"><i class="ti ti-archive"></i></div><div class="mc-lbl">KG remaining</div><div class="mc-val" id="d-rm-left">0.00</div><div class="mc-sub">available</div></div>
-          <div class="mc b"><div class="mc-ico"><i class="ti ti-stack-2"></i></div><div class="mc-lbl">Active lots</div><div class="mc-val" id="d-rm-lots">0</div><div class="mc-sub">with stock left</div></div>
+          <div class="mc b"><div class="mc-ico"><i class="ti ti-stack-2"></i></div><div class="mc-lbl">Active sachet lots</div><div class="mc-val" id="d-rm-lots">0</div><div class="mc-sub">with KG remaining</div></div>
+        </div>
+        <div style="font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px"><i class="ti ti-package" style="font-size:13px;color:#c08a18"></i> Packing Bags — Bundle inventory</div>
+        <div class="mrow" style="margin-top:0;margin-bottom:1.1rem">
+          <div class="mc a"><div class="mc-ico"><i class="ti ti-package"></i></div><div class="mc-lbl">Bundles received</div><div class="mc-val" id="d-pb-in">0</div><div class="mc-sub">all time</div></div>
+          <div class="mc r"><div class="mc-ico"><i class="ti ti-flame"></i></div><div class="mc-lbl">Bundles used</div><div class="mc-val" id="d-pb-used">0</div><div class="mc-sub">in production</div></div>
+          <div class="mc g"><div class="mc-ico"><i class="ti ti-archive"></i></div><div class="mc-lbl">Bundles remaining</div><div class="mc-val" id="d-pb-left">0</div><div class="mc-sub" id="d-pb-packs-sub">0 packs available</div></div>
+          <div class="mc b"><div class="mc-ico"><i class="ti ti-stack-2"></i></div><div class="mc-lbl">Active packing lots</div><div class="mc-val" id="d-pb-lots">0</div><div class="mc-sub">with bundles left</div></div>
         </div>
 
         <!-- RAW MATERIAL CHARTS -->
         <div class="cgrid" style="margin-top:1.1rem">
           <div class="card card-sm">
-            <div class="card-title"><i class="ti ti-chart-donut"></i> Material by category (KG)</div>
+            <div class="card-title"><i class="ti ti-chart-donut"></i> Material cost by category (₦)</div>
             <div class="cbox"><canvas id="ch-mat-cat" aria-label="Material by category"></canvas></div>
           </div>
           <div class="card card-sm">
-            <div class="card-title"><i class="ti ti-chart-bar"></i> Top lots — received vs consumed</div>
+            <div class="card-title"><i class="ti ti-chart-bar"></i> Top lots — received vs consumed (KG or bundles)</div>
             <div class="cbox"><canvas id="ch-mat-lots" aria-label="Lots bar chart"></canvas></div>
           </div>
         </div>
@@ -1608,10 +1686,48 @@ function finaliseLogin(user){
   goPage('sale',document.getElementById('nav-sale'));
   updateExpPanel();updateProdPanel();renderRecentSales();
   updateRMPanel();renderRawMat('');renderInvSummary('');updateRmAltIdPreview();
+  updateStockHint();
+
+  // ── Load all data from Firebase ──
+  loadFromFirebase();
 
   // ---- ATTENDANCE: log sign-in ----
   attSignIn(user);
   startAttClock();
+}
+
+/* =============================================
+   FIREBASE — load all collections on login
+   ============================================= */
+async function loadFromFirebase(){
+  if(!window.fsReady){ // Firebase module may still be loading; retry once
+    await new Promise(res=>setTimeout(res,800));
+    if(!window.fsReady){ toast('Running offline — data not synced',''); return; }
+  }
+  toast('Syncing data…','');
+  try{
+    const cols=['sales','production','expenses','rawmats'];
+    for(const col of cols){
+      const snap=await fsGetDocs(fsCol(col));
+      snap.forEach(d=>{
+        const data={...d.data(),_fbId:d.id};
+        // Avoid duplicates — match by _fbId or by ts+type for sales
+        if(!DB[col].find(r=>r._fbId===data._fbId)){
+          if(!data.id) data.id=DB.nid();
+          DB[col].push(data);
+        }
+      });
+    }
+    // Re-render everything with fresh data
+    updateExpPanel();updateProdPanel();renderRecentSales();
+    updateRMPanel();renderRawMat('');renderInvSummary('');
+    updateStockHint();populateBatchSelect();populateMatLotSelect();
+    if(CU&&CU.role!=='staff') renderDash();
+    toast('Data synced ✓','s');
+  } catch(e){
+    console.warn('Firebase load error:',e);
+    toast('Sync failed — working offline','');
+  }
 }
 
 /* =============================================
@@ -1796,6 +1912,7 @@ function goPage(name,btn){
   if(btn)btn.classList.add('active');
   const map={mysales:renderMySales,dash:renderDash,asales:()=>renderAS(''),aprod:renderAP,aexp:renderAE,users:renderUsers,
     prod:updateProdPanel,rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
+    sale:()=>{ updateStockHint(); },
     attendance:()=>{updateAttStatusBar();renderAttMy();},
     'att-admin':()=>renderAttAdmin(''),
     'geo-settings':()=>renderGeoSettings()};
@@ -1958,6 +2075,7 @@ function selSaleType(t, el){
   document.getElementById('r-lock-note').innerHTML = '<i class="ti ti-lock" style="font-size:11px"></i> Revenue figures are admin-only';
   if(t==='supply') document.getElementById('cash-tracker').classList.add('hidden');
   updateR();
+  updateStockHint();
 }
 
 function onDateChange(){
@@ -2095,6 +2213,46 @@ function updateR(){
   document.getElementById('r-date').textContent = (!dateVal||dateVal===TODAY) ? 'Today' : document.getElementById('s-date-label').textContent;
 }
 
+/* =============================================
+   PRODUCTION STOCK CHECK
+   Returns available bags = total produced for a product minus total already sold/dispatched
+   ============================================= */
+function getAvailableBagsForSale(product){
+  const produced = DB.production
+    .filter(p => p.type === product)
+    .reduce((a, p) => a + (p.qty || 0), 0);
+  const sold = DB.sales
+    .filter(s => !s.voided && s.product === product)
+    .reduce((a, s) => {
+      if(s.type === 'walkin') return a + (s.qty || 0);
+      if(s.type === 'supply') return a + (s.carried || 0); // carried = bags dispatched
+      return a;
+    }, 0);
+  return Math.max(0, produced - sold);
+}
+
+function updateStockHint(){
+  const isSupply = sType === 'supply';
+  const productEl = document.getElementById(isSupply ? 'sp-product' : 's-product');
+  const qtyEl     = document.getElementById(isSupply ? 'sp-carried' : 's-qty');
+  const hintEl    = document.getElementById(isSupply ? 'sp-stock-hint' : 's-stock-hint');
+  if(!productEl || !hintEl) return;
+
+  const product = productEl.value;
+  const avail   = getAvailableBagsForSale(product);
+  const entered = parseFloat(qtyEl ? qtyEl.value : 0) || 0;
+  const none    = avail === 0;
+  const over    = entered > avail;
+
+  if(none){
+    hintEl.innerHTML = '<span style="color:var(--red-m);font-weight:600"><i class="ti ti-alert-triangle" style="font-size:11px"></i> No bags available in production inventory</span>';
+  } else if(over){
+    hintEl.innerHTML = '<span style="color:var(--red-m);font-weight:600"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Only <strong>'+avail.toLocaleString()+'</strong> bags available — reduce quantity</span>';
+  } else {
+    hintEl.innerHTML = '<span style="color:var(--grn)"><i class="ti ti-package" style="font-size:11px"></i> <strong>'+avail.toLocaleString()+'</strong> bags available in production inventory</span>';
+  }
+}
+
 let pendingSale=null;
 
 function submitSale(){
@@ -2114,6 +2272,14 @@ function submitSale(){
     if(!driver){toast('Enter the driver name','e');return;}
     if(!carried||!sold){toast('Fill in bags carried and bags sold','e');return;}
     if(!price){toast('Enter the price per bag','e');return;}
+
+    // ── STOCK CHECK ──
+    const _spAvail = getAvailableBagsForSale(product);
+    if(carried > _spAvail){
+      toast('Only '+_spAvail.toLocaleString()+' bags available in production — reduce bags carried','e');
+      updateStockHint();
+      return;
+    }
 
     const outstanding=Math.max(0, carried-sold-leak);
     const amount=sold*price;
@@ -2174,6 +2340,14 @@ function submitSale(){
   const hasCash = sM==='CASH'||isSplit;
 
   if(!qty||!price){toast('Fill in quantity and price','e');return;}
+
+  // ── STOCK CHECK ──
+  const _wiAvail = getAvailableBagsForSale(product);
+  if(qty > _wiAvail){
+    toast('Only '+_wiAvail.toLocaleString()+' bags available in production — reduce quantity','e');
+    updateStockHint();
+    return;
+  }
 
   const received = hasCash ? (parseFloat(document.getElementById('s-received').value)||0) : 0;
   const change   = hasCash ? (parseFloat(document.getElementById('s-change').value)||0) : 0;
@@ -2237,11 +2411,17 @@ function finalizeSale(doPrint){
   const id=DB.nid();
   const sale={...pendingSale, id, saleId:genSaleId(id), ts:Date.now()};
   DB.sales.push(sale);
+  // ── Firebase save ──
+  if(window.fsReady){
+    const clean=Object.fromEntries(Object.entries(sale).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('sales'), clean).then(ref=>{ sale._fbId=ref.id; }).catch(e=>console.warn('FS sale write:',e));
+  }
   document.getElementById('confirm-sale-mo').classList.remove('open');
   showOk('sale-ok'); clearSale(); toast(sale.type==='supply'?'Supply log recorded!':'Sale recorded!','s');
   renderRecentSales();
   if(doPrint) printReceipt(sale);
   pendingSale=null;
+  updateStockHint();
 }
 
 function reprintSale(id){
@@ -2428,6 +2608,7 @@ function onMatLotChange(type){
     hint.textContent=avail+' bundle'+(avail!==1?'s':'')+' available ('+avail*10+' packs)';
     qtyInput.max=avail;
   }
+  updateBatchMetricsPreview();
 }
 
 function validateMatQty(type){
@@ -2454,6 +2635,7 @@ function validateMatQty(type){
       ?'<span style="color:var(--red-m)">Only '+avail+' bundle'+(avail!==1?'s':'')+' available</span>'
       :avail+' bundle'+(avail!==1?'s':'')+' available ('+avail*10+' packs)';
   }
+  updateBatchMetricsPreview();
 }
 
 function submitProd(){
@@ -2506,6 +2688,12 @@ function submitProd(){
     matPackingLotId,matPackingLabel,matPackingBundles,
     matLotId,matLotLabel,matQtyUsed,
     type,qty,note,staff:CU.name,staffId:CU.id});
+  // ── Firebase save ──
+  if(window.fsReady){
+    const prod=DB.production[DB.production.length-1];
+    const clean=Object.fromEntries(Object.entries(prod).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('production'), clean).then(ref=>{ prod._fbId=ref.id; }).catch(e=>console.warn('FS prod write:',e));
+  }
   showOk('prod-ok');clearProd();toast('Batch logged! Code: '+batch,'s');
   updateProdPanel();populateBatchSelect();populateMatLotSelect();updateRMPanel();renderRawMat('');
 }
@@ -2548,11 +2736,29 @@ function calcBatchMetrics(batchCode){
   return{totalCost,totalKg,perKg,qty,hasMats:mats.length>0};
 }
 function updateBatchMetricsPreview(){
-  const el=document.getElementById('p-batch');if(!el)return;
-  const m=calcBatchMetrics(el.value);
-  document.getElementById('p-batchqty').textContent=m.qty.toLocaleString();
-  document.getElementById('p-batchcost').textContent='₦'+m.totalCost.toLocaleString(undefined,{maximumFractionDigits:2});
-  document.getElementById('p-batchperkg').textContent=(m.hasMats&&m.totalKg>0)?m.perKg.toFixed(2)+' /kg':'—';
+  const qty=parseFloat(document.getElementById('p-qty')?.value)||0;
+
+  // Sachet lot cost
+  const sachetLotId=document.getElementById('p-mat-sachet')?.value;
+  const sachetQty=parseFloat(document.getElementById('p-mat-sachet-qty')?.value)||0;
+  const sachetLot=sachetLotId?DB.rawmats.find(r=>String(r.id)===sachetLotId):null;
+  const sachetCost=sachetLot&&sachetQty>0?sachetQty*sachetLot.unitCost:0;
+
+  // Packing lot cost
+  const packingLotId=document.getElementById('p-mat-packing')?.value;
+  const packingBdl=parseInt(document.getElementById('p-mat-packing-qty')?.value)||0;
+  const packingLot=packingLotId?DB.rawmats.find(r=>String(r.id)===packingLotId):null;
+  const packingCost=packingLot&&packingBdl>0?packingBdl*packingLot.unitCost:0;
+
+  const totalCost=sachetCost+packingCost;
+  const perKg=sachetQty>0&&qty>0?qty/sachetQty:0;
+
+  const _s=id=>document.getElementById(id);
+  if(_s('p-batchqty'))_s('p-batchqty').textContent=qty.toLocaleString();
+  if(_s('p-batchkg'))_s('p-batchkg').textContent=sachetQty>0?sachetQty.toFixed(2)+' kg':'—';
+  if(_s('p-batchbdl'))_s('p-batchbdl').textContent=packingBdl>0?packingBdl+' bundles ('+(packingBdl*10)+' packs)':'—';
+  if(_s('p-batchcost'))_s('p-batchcost').textContent='₦'+totalCost.toLocaleString(undefined,{maximumFractionDigits:2});
+  if(_s('p-batchperkg'))_s('p-batchperkg').textContent=(sachetQty>0&&qty>0)?perKg.toFixed(2)+' bags/kg':'—';
 }
 
 /* LOG RAW MATERIALS USED */
@@ -2659,6 +2865,12 @@ function submitRawMat(){
     amount=qtyKg*unitCost;
   }
   DB.rawmats.push({id:DB.nid(),altId,date,category,isPackingBag,noRoll,qtyKg,unitCost,amount,rolls,bundles,totalPacks,note,staff:CU.name,staffId:CU.id});
+  // ── Firebase save ──
+  if(window.fsReady){
+    const rm=DB.rawmats[DB.rawmats.length-1];
+    const clean=Object.fromEntries(Object.entries(rm).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('rawmats'), clean).then(ref=>{ rm._fbId=ref.id; }).catch(e=>console.warn('FS rawmat write:',e));
+  }
   showOk('rm-ok'); clearRawMat();
   updateRMPanel(); renderRawMat(''); updateBatchMetricsPreview(); populateMatLotSelect(); renderInvSummary(''); updateRmAltIdPreview();
   // Show ID popup
@@ -2672,8 +2884,10 @@ function clearRawMat(){
   resetRollRows();
   const el=document.getElementById('rm-date');if(el)el.value='';
   const lbl=document.getElementById('rm-date-label');if(lbl)lbl.textContent='Today';
+  const rc=document.getElementById('rm-cost');if(rc)rc.value='';
   const bq=document.getElementById('rm-bundle-qty');if(bq)bq.value='';
   const bc=document.getElementById('rm-bundle-cost');if(bc)bc.value='';
+  recalcRollSummary();
   recalcBundleSummary();
   populateMatSelects();
   updateRmAltIdPreview();
@@ -2705,34 +2919,65 @@ function renderRawMat(q){
 
 /* INVENTORY SUMMARY (overview table + metrics) */
 function renderInvSummary(q){
-  // metrics
-  const totKgIn=DB.rawmats.reduce((a,r)=>a+r.qtyKg,0);
-  const totKgUsed=DB.rawmats.reduce((a,r)=>a+rawmatConsumed(r.id),0);
+  const sachetRM=DB.rawmats.filter(r=>!r.isPackingBag);
+  const packingRM=DB.rawmats.filter(r=>r.isPackingBag);
+
+  // Sachet KG metrics
+  const totKgIn=sachetRM.reduce((a,r)=>a+r.qtyKg,0);
+  const totKgUsed=sachetRM.reduce((a,r)=>a+rawmatConsumed(r.id),0);
   const totKgLeft=Math.max(0,totKgIn-totKgUsed);
-  const activeLots=DB.rawmats.filter(r=>rawmatAvailable(r)>0).length;
+
+  // Packing bundle metrics
+  const pbBundlesUsed=r=>DB.production.filter(p=>p.matPackingLotId===r.id).reduce((a,p)=>a+(p.matPackingBundles||0),0);
+  const totPbIn=packingRM.reduce((a,r)=>a+(r.bundles||0),0);
+  const totPbUsed=packingRM.reduce((a,r)=>a+pbBundlesUsed(r),0);
+  const totPbLeft=Math.max(0,totPbIn-totPbUsed);
+  const activePbLots=packingRM.filter(r=>rawmatAvailBundles(r)>0).length;
+
   const s=id=>document.getElementById(id);
   if(s('inv-lots'))s('inv-lots').textContent=DB.rawmats.length;
   if(s('inv-kg-in'))s('inv-kg-in').textContent=totKgIn.toFixed(2);
   if(s('inv-kg-used'))s('inv-kg-used').textContent=totKgUsed.toFixed(2);
   if(s('inv-kg-left'))s('inv-kg-left').textContent=totKgLeft.toFixed(2);
+  if(s('inv-pb-in'))s('inv-pb-in').textContent=totPbIn;
+  if(s('inv-pb-used'))s('inv-pb-used').textContent=totPbUsed;
+  if(s('inv-pb-left'))s('inv-pb-left').textContent=totPbLeft;
+  if(s('inv-pb-packs-sub'))s('inv-pb-packs-sub').textContent=(totPbLeft*10).toLocaleString()+' packs available';
+  if(s('inv-pb-lots'))s('inv-pb-lots').textContent=activePbLots;
+
   // table
   const tb=document.getElementById('inv-tbody');if(!tb)return;
   const matName=c=>{const m=MAT_CATS.find(x=>x.code===c);return m?m.name:c;};
   const filtered=DB.rawmats.filter(r=>!q||[r.altId||'',r.category,matName(r.category)].join(' ').toLowerCase().includes((q||'').toLowerCase()));
   if(!filtered.length){tb.innerHTML='<tr><td colspan="9"><div class="empty"><i class="ti ti-archive"></i><p>No inventory entries yet</p></div></td></tr>';return;}
   tb.innerHTML=filtered.slice().reverse().map(r=>{
-    const consumed=rawmatConsumed(r.id);
-    const avail=rawmatAvailable(r);
-    const pct=r.qtyKg>0?Math.min(100,Math.round(consumed/r.qtyKg*100)):0;
-    const barCol=pct>=90?'#c03838':pct>=60?'#c08a18':'#1a5fcb';
-    const badge=avail<=0?'<span class="badge br">Depleted</span>':avail<r.qtyKg*.25?'<span class="badge ba">Low</span>':'<span class="badge bg">In stock</span>';
+    let pct, barCol, badge, consumedCell, availCell;
+    if(r.isPackingBag){
+      const pbUsed=pbBundlesUsed(r);
+      const pbAvail=Math.max(0,(r.bundles||0)-pbUsed);
+      pct=(r.bundles||0)>0?Math.min(100,Math.round(pbUsed/(r.bundles)*100)):0;
+      barCol=pct>=90?'#c03838':pct>=60?'#c08a18':'#c08a18';
+      const depleted=pbAvail<=0;
+      const low=!depleted&&pbAvail<(r.bundles||0)*.25;
+      badge=depleted?'<span class="badge br">Depleted</span>':low?'<span class="badge ba">Low</span>':'<span class="badge bg">In stock</span>';
+      consumedCell=pbUsed>0?pbUsed+' bundle'+(pbUsed!==1?'s':'')+'<span style="color:var(--txt3);font-size:11px"> ('+pbUsed*10+' pks)</span>':'—';
+      availCell=`<span style="font-weight:600;color:${depleted?'var(--red-m)':low?'var(--amb-m)':'var(--grn)'}">${pbAvail} bundle${pbAvail!==1?'s':''}<span style="font-size:11px;color:var(--txt3)"> (${pbAvail*10} pks)</span></span>`;
+    } else {
+      const consumed=rawmatConsumed(r.id);
+      const avail=rawmatAvailable(r);
+      pct=r.qtyKg>0?Math.min(100,Math.round(consumed/r.qtyKg*100)):0;
+      barCol=pct>=90?'#c03838':pct>=60?'#c08a18':'#1a5fcb';
+      badge=avail<=0?'<span class="badge br">Depleted</span>':avail<r.qtyKg*.25?'<span class="badge ba">Low</span>':'<span class="badge bg">In stock</span>';
+      consumedCell=consumed.toFixed(2)+' kg';
+      availCell=`<span style="font-weight:600;color:${avail<=0?'var(--red-m)':avail<r.qtyKg*.25?'var(--amb-m)':'var(--grn)'}">${avail.toFixed(2)} kg</span>`;
+    }
     return `<tr>
       <td><span style="font-family:'DM Mono',monospace;font-size:11.5px;font-weight:700;color:#1a5fcb;background:var(--grn-l);padding:3px 7px;border-radius:5px">${r.altId||'—'}</span></td>
       <td>${fmtDate(r.date)}</td>
-      <td><span class="badge bt">${matName(r.category)}</span></td>
+      <td><span class="badge ${r.isPackingBag?'ba':'bt'}">${matName(r.category)}</span></td>
       <td style="font-weight:600">${r.isPackingBag?(r.totalPacks||0)+' packs ('+r.bundles+' bdl)':r.qtyKg.toFixed(2)+' kg'}</td>
-      <td>${r.isPackingBag?'—':consumed.toFixed(2)+' kg'}</td>
-      <td style="font-weight:600;color:${avail<=0?'var(--red-m)':avail<r.qtyKg*.25?'var(--amb-m)':'var(--grn)'}">${r.isPackingBag?'—':avail.toFixed(2)+' kg'}</td>
+      <td>${consumedCell}</td>
+      <td>${availCell}</td>
       <td style="min-width:100px">
         <div style="display:flex;align-items:center;gap:7px">
           <div style="flex:1;height:6px;background:var(--surf2);border-radius:3px;overflow:hidden;border:1px solid var(--brd)">
@@ -2805,6 +3050,12 @@ function submitExp(){
   const note=document.getElementById('e-note').value;
   if(!date||!desc||!amt){toast('Fill in date, description and amount','e');return;}
   DB.expenses.push({id:DB.nid(),date,cat,desc,amount:amt,paid,note,staff:CU.name,staffId:CU.id});
+  // ── Firebase save ──
+  if(window.fsReady){
+    const exp=DB.expenses[DB.expenses.length-1];
+    const clean=Object.fromEntries(Object.entries(exp).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('expenses'), clean).then(ref=>{ exp._fbId=ref.id; }).catch(e=>console.warn('FS exp write:',e));
+  }
   showOk('exp-ok');clearExp();toast('Expense logged!','s');updateExpPanel();
 }
 function clearExp(){['e-desc','e-amt','e-note'].forEach(id=>document.getElementById(id).value='');setDates();}
@@ -2825,31 +3076,67 @@ function updateExpPanel(){
 function renderMySales(){
   const all=DB.sales.filter(s=>s.staffId===CU.id && inDR('mysales',s.date));
   const active=all.filter(s=>!s.voided);
+  const supplyActive=active.filter(s=>s.type==='supply');
+  const walkinActive=active.filter(s=>s.type==='walkin');
+
+  // Summary metrics
   document.getElementById('my-rev').textContent='₦'+active.reduce((a,s)=>a+s.amount,0).toLocaleString();
   document.getElementById('my-txn').textContent=active.length;
   document.getElementById('my-bags').textContent=active.reduce((a,s)=>a+(s.type==='supply'?s.sold:s.qty),0).toLocaleString();
-  const tb=document.getElementById('my-tbody');
-  if(!all.length){tb.innerHTML='<tr><td colspan="8"><div class="empty"><i class="ti ti-shopping-cart"></i><p>No sales yet this session</p></div></td></tr>';return;}
-  tb.innerHTML=all.slice().reverse().map(s=>{
-    const v=s.voided;
-    const sty=v?'style="text-decoration:line-through;opacity:.55"':'';
-    if(s.type==='supply'){
+  document.getElementById('my-drv-trips').textContent=supplyActive.length;
+  document.getElementById('my-drv-leak').textContent=supplyActive.reduce((a,s)=>a+(s.leak||0),0).toLocaleString();
+  document.getElementById('my-drv-outstanding').textContent=supplyActive.reduce((a,s)=>a+(s.outstanding||0),0).toLocaleString();
+
+  const mBadge=m=>m==='CASH'?'bg':m==='TRANSFER'?'bb':m==='POS'?'bt':'ba';
+
+  // Walk-in table
+  const wtb=document.getElementById('my-walkin-tbody');
+  const walkinAll=all.filter(s=>s.type==='walkin');
+  if(!walkinAll.length){
+    wtb.innerHTML='<tr><td colspan="7"><div class="empty"><i class="ti ti-building-store"></i><p>No walk-in sales recorded yet</p></div></td></tr>';
+  } else {
+    wtb.innerHTML=walkinAll.slice().reverse().map(s=>{
+      const v=s.voided;
+      const sty=v?'style="text-decoration:line-through;opacity:.55"':'';
       return `<tr ${sty}>
-        <td><span class="badge ba">Supply</span></td><td>${fmtDate(s.date)}</td><td>${s.product}</td><td>${s.sold} sold / ${s.carried} carried</td>
+        <td>${fmtDate(s.date)}</td>
+        <td>${s.product}</td>
+        <td style="font-family:'DM Mono',monospace">${s.qty}</td>
         <td>₦${s.price.toLocaleString()}</td>
         <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
-        <td>${s.leak>0?`<span style="color:var(--red);font-weight:500">${s.leak} leak</span>`:'—'}</td>
-        <td><span class="badge ${s.method==='CASH'?'bg':s.method==='TRANSFER'?'bb':s.method==='POS'?'bt':'ba'}">${s.method.replace('_',' + ')}</span></td>
+        <td>${s.damaged>0?`<span style="color:var(--red);font-weight:500">${s.damaged}</span>`:'—'}</td>
+        <td><span class="badge ${mBadge(s.method)}">${s.method.replace('_',' + ')}</span></td>
       </tr>`;
-    }
-    return `<tr ${sty}>
-    <td><span class="badge bg">Walk-in</span></td><td>${fmtDate(s.date)}</td><td>${s.product}</td><td>${s.qty}</td>
-    <td>₦${s.price.toLocaleString()}</td>
-    <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
-    <td>${s.damaged>0?`<span style="color:var(--red);font-weight:500">${s.damaged}</span>`:'—'}</td>
-    <td><span class="badge ${s.method==='CASH'?'bg':s.method==='TRANSFER'?'bb':s.method==='POS'?'bt':'ba'}">${s.method}</span></td>
-  </tr>`;
-  }).join('');
+    }).join('');
+  }
+
+  // Supply table
+  const stb=document.getElementById('my-supply-tbody');
+  const supplyAll=all.filter(s=>s.type==='supply');
+  if(!supplyAll.length){
+    stb.innerHTML='<tr><td colspan="12"><div class="empty"><i class="ti ti-truck-delivery"></i><p>No supply trips recorded yet</p></div></td></tr>';
+  } else {
+    stb.innerHTML=supplyAll.slice().reverse().map(s=>{
+      const v=s.voided;
+      const sty=v?'style="text-decoration:line-through;opacity:.55"':'';
+      const sellRate=s.carried>0?Math.round(s.sold/s.carried*100):0;
+      const rateColor=sellRate>=90?'var(--grn)':sellRate>=70?'var(--amb)':'var(--red-m)';
+      return `<tr ${sty}>
+        <td>${fmtDate(s.date)}</td>
+        <td style="font-weight:600">${s.driver||'—'}</td>
+        <td><span class="badge bt">${s.product}</span></td>
+        <td style="font-family:'DM Mono',monospace">${s.carried||0}</td>
+        <td style="font-family:'DM Mono',monospace;font-weight:600">${s.sold||0}</td>
+        <td><span style="font-weight:700;color:${rateColor};font-family:'DM Mono',monospace">${sellRate}%</span></td>
+        <td style="color:var(--red-m);font-family:'DM Mono',monospace">${s.leak||0}</td>
+        <td style="font-family:'DM Mono',monospace">${s.leakEx||0}</td>
+        <td style="color:var(--amb);font-family:'DM Mono',monospace">${s.outstanding||0}</td>
+        <td>₦${s.price.toLocaleString()}</td>
+        <td style="font-weight:600">₦${s.amount.toLocaleString()}</td>
+        <td><span class="badge ${mBadge(s.method)}">${s.method.replace('_',' + ')}</span></td>
+      </tr>`;
+    }).join('');
+  }
 }
 
 /* RECENT SALES (on the Record Sale page itself) */
@@ -2972,6 +3259,11 @@ function confirmVoid(){
   s.voided=!s.voided;
   if(s.voided){ s.voidedBy=CU.name; s.voidedAt=Date.now(); }
   else { delete s.voidedBy; delete s.voidedAt; }
+  // ── Firebase sync void flag ──
+  if(window.fsReady && s._fbId){
+    fsUpdateDoc(fsDoc('sales', s._fbId), {voided:s.voided, voidedBy:s.voidedBy||null, voidedAt:s.voidedAt||null})
+      .catch(e=>console.warn('FS void sync:',e));
+  }
   closeVoidMo();
   toast(s.voided?'Sale voided':'Sale restored','s');
   renderAS('');
@@ -2983,16 +3275,21 @@ function renderAP(){
   const d=DB.production.filter(p=>inDR('aprod',p.date));const tb=document.getElementById('ap-tbody');
   if(!d.length){tb.innerHTML='<tr><td colspan="12"><div class="empty"><i class="ti ti-packages"></i><p>No batches logged yet</p></div></td></tr>';return;}
   tb.innerHTML=d.slice().reverse().map(p=>{
-    const m=calcBatchMetrics(p.batch);
+    // Compute material cost live from lot records
+    const sachetLot=p.matSachetLotId?DB.rawmats.find(r=>r.id===p.matSachetLotId):null;
+    const sachetCost=sachetLot&&(p.matSachetQtyUsed||0)>0?(p.matSachetQtyUsed)*sachetLot.unitCost:0;
+    const packingLot=p.matPackingLotId?DB.rawmats.find(r=>r.id===p.matPackingLotId):null;
+    const packingCost=packingLot&&(p.matPackingBundles||0)>0?(p.matPackingBundles)*packingLot.unitCost:0;
+    const totalMatCost=sachetCost+packingCost;
     return`<tr>
     <td>${fmtDate(p.date)}</td>
     <td style="font-family:'DM Mono',monospace;font-size:12px">${p.batch}</td>
-    <td>${p.matLotId?`<span class="badge bt">${p.matLotLabel}</span>`:'—'}</td>
-    <td>${p.matQtyUsed>0?p.matQtyUsed.toFixed(2)+' kg':'—'}</td>
+    <td>${p.matSachetLotId?`<span class="badge bt">${p.matSachetLabel||p.matLotLabel||'—'}</span>`:(p.matLotId?`<span class="badge bt">${p.matLotLabel}</span>`:'—')}</td>
+    <td>${(p.matSachetQtyUsed||p.matQtyUsed||0)>0?((p.matSachetQtyUsed||p.matQtyUsed)).toFixed(2)+' kg':'—'}</td>
+    <td>${p.matPackingLotId?`<span class="badge ba">${p.matPackingLabel||'—'}</span>`:'—'}</td>
+    <td>${(p.matPackingBundles||0)>0?p.matPackingBundles+' bdl ('+(p.matPackingBundles*10)+' pks)':'—'}</td>
     <td>${p.type}</td><td style="font-weight:600">${p.qty.toLocaleString()}</td>
-    <td style="font-weight:600">${m.totalCost>0?'₦'+m.totalCost.toLocaleString(undefined,{maximumFractionDigits:2}):'—'}</td>
-    <td>${m.totalKg>0?m.totalKg.toFixed(2)+' kg':'—'}</td>
-    <td>${m.totalKg>0?m.perKg.toFixed(2):'—'}</td>
+    <td style="font-weight:600">${totalMatCost>0?'₦'+totalMatCost.toLocaleString(undefined,{maximumFractionDigits:2}):'—'}</td>
     <td>${p.staff}</td>
     <td style="color:var(--txt3);font-size:12px">${p.note||'—'}</td>
     <td><button class="btn btn-danger btn-sm" onclick="promptDel('production',${p.id})"><i class="ti ti-trash"></i></button></td>
@@ -3038,23 +3335,99 @@ function renderDash(){
   document.getElementById('d-profit').textContent=(profit>=0?'₦':'-₦')+Math.abs(profit).toLocaleString();
   document.querySelector('#page-dash .mc:last-child').className='mc '+(profit>=0?'g':'r');
 
+  /* ── Driver Sales Analysis ── */
+  const supplySales = activeSales.filter(s => s.type === 'supply');
+  const drvTrips = supplySales.length;
+  const drvCarried = supplySales.reduce((a,s) => a + (s.carried||0), 0);
+  const drvSold = supplySales.reduce((a,s) => a + (s.sold||0), 0);
+  const drvLeak = supplySales.reduce((a,s) => a + (s.leak||0), 0);
+  const drvOutstanding = supplySales.reduce((a,s) => a + (s.outstanding||0), 0);
+  const drvRev = supplySales.reduce((a,s) => a + (s.amount||0), 0);
+  const _d = id => document.getElementById(id);
+  if(_d('d-drv-trips')) _d('d-drv-trips').textContent = drvTrips;
+  if(_d('d-drv-carried')) _d('d-drv-carried').textContent = drvCarried.toLocaleString();
+  if(_d('d-drv-sold')) _d('d-drv-sold').textContent = drvSold.toLocaleString();
+  if(_d('d-drv-leak')) _d('d-drv-leak').textContent = drvLeak.toLocaleString();
+  if(_d('d-drv-outstanding')) _d('d-drv-outstanding').textContent = drvOutstanding.toLocaleString();
+  if(_d('d-drv-rev')) _d('d-drv-rev').textContent = '₦' + drvRev.toLocaleString();
+
+  // Per-driver breakdown
+  const drvMap = {};
+  supplySales.forEach(s => {
+    const key = (s.driver||'Unknown') + '||' + (s.product||'—');
+    if(!drvMap[key]) drvMap[key] = {driver:s.driver||'Unknown', product:s.product||'—', trips:0, carried:0, sold:0, leak:0, outstanding:0, rev:0, methods:{}};
+    const d = drvMap[key];
+    d.trips++;
+    d.carried += s.carried||0;
+    d.sold += s.sold||0;
+    d.leak += s.leak||0;
+    d.outstanding += s.outstanding||0;
+    d.rev += s.amount||0;
+    d.methods[s.method] = (d.methods[s.method]||0) + 1;
+  });
+  const drvRows = Object.values(drvMap).sort((a,b) => b.rev - a.rev);
+  const drvTb = _d('d-drv-tbody');
+  if(drvTb){
+    if(!drvRows.length){
+      drvTb.innerHTML = '<tr><td colspan="10"><div class="empty"><i class="ti ti-truck-delivery"></i><p>No driver supply sales recorded yet</p></div></td></tr>';
+    } else {
+      const mBadge2 = m => m==='CASH'?'bg':m==='TRANSFER'?'bb':m==='POS'?'bt':'ba';
+      drvTb.innerHTML = drvRows.map(d => {
+        const sellRate = d.carried > 0 ? Math.round(d.sold / d.carried * 100) : 0;
+        const topMethod = Object.entries(d.methods).sort((a,b)=>b[1]-a[1])[0];
+        const rateColor = sellRate >= 90 ? 'var(--grn)' : sellRate >= 70 ? 'var(--amb)' : 'var(--red-m)';
+        return `<tr>
+          <td style="font-weight:600">${d.driver}</td>
+          <td style="font-family:'DM Mono',monospace">${d.trips}</td>
+          <td><span class="badge bt">${d.product}</span></td>
+          <td style="font-family:'DM Mono',monospace">${d.carried.toLocaleString()}</td>
+          <td style="font-family:'DM Mono',monospace;font-weight:600">${d.sold.toLocaleString()}</td>
+          <td><span style="font-weight:700;color:${rateColor};font-family:'DM Mono',monospace">${sellRate}%</span></td>
+          <td style="color:var(--red-m);font-family:'DM Mono',monospace">${d.leak.toLocaleString()}</td>
+          <td style="font-family:'DM Mono',monospace;color:var(--amb)">${d.outstanding.toLocaleString()}</td>
+          <td style="font-weight:600">₦${d.rev.toLocaleString()}</td>
+          <td>${topMethod?`<span class="badge ${mBadge2(topMethod[0])}">${topMethod[0].replace('_',' + ')}</span>`:'—'}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
   /* ── Raw material analysis ── */
   const allRM=DB.rawmats; // all time for inventory context
-  const totRmIn=allRM.reduce((a,r)=>a+r.qtyKg,0);
-  const totRmUsed=allRM.reduce((a,r)=>a+rawmatConsumed(r.id),0);
+  const sachetRM=allRM.filter(r=>!r.isPackingBag);
+  const packingRM=allRM.filter(r=>r.isPackingBag);
+
+  // Sachet bag metrics (KG-based)
+  const totRmIn=sachetRM.reduce((a,r)=>a+r.qtyKg,0);
+  const totRmUsed=sachetRM.reduce((a,r)=>a+rawmatConsumed(r.id),0);
   const totRmLeft=Math.max(0,totRmIn-totRmUsed);
-  const activeLotsN=allRM.filter(r=>rawmatAvailable(r)>0).length;
+  const activeSachetLots=sachetRM.filter(r=>rawmatAvailable(r)>0).length;
+
+  // Packing bag metrics (bundle-based)
+  const totPbIn=packingRM.reduce((a,r)=>a+(r.bundles||0),0);
+  const pbConsumed=r=>DB.production.filter(p=>p.matPackingLotId===r.id).reduce((a,p)=>a+(p.matPackingBundles||0),0);
+  const totPbUsed=packingRM.reduce((a,r)=>a+pbConsumed(r),0);
+  const totPbLeft=Math.max(0,totPbIn-totPbUsed);
+  const activePbLots=packingRM.filter(r=>rawmatAvailBundles(r)>0).length;
+
   document.getElementById('d-rm-in').textContent=totRmIn.toFixed(2);
   document.getElementById('d-rm-used').textContent=totRmUsed.toFixed(2);
   document.getElementById('d-rm-left').textContent=totRmLeft.toFixed(2);
-  document.getElementById('d-rm-lots').textContent=activeLotsN;
+  document.getElementById('d-rm-lots').textContent=activeSachetLots;
 
-  /* ── Chart: material by category ── */
-  const catKg={};
+  const _s=id=>document.getElementById(id);
+  if(_s('d-pb-in'))_s('d-pb-in').textContent=totPbIn;
+  if(_s('d-pb-used'))_s('d-pb-used').textContent=totPbUsed;
+  if(_s('d-pb-left'))_s('d-pb-left').textContent=totPbLeft;
+  if(_s('d-pb-packs-sub'))_s('d-pb-packs-sub').textContent=(totPbLeft*10).toLocaleString()+' packs available';
+  if(_s('d-pb-lots'))_s('d-pb-lots').textContent=activePbLots;
+
+  /* ── Chart: material cost by category (₦) — includes both sachet & packing bags ── */
+  const catCost={};
   const matNameFn=c=>{const m=MAT_CATS.find(x=>x.code===c);return m?m.name:c;};
-  dashRM.forEach(r=>{const n=matNameFn(r.category);catKg[n]=(catKg[n]||0)+r.qtyKg;});
-  const catLabels=Object.keys(catKg);
-  const catVals=Object.values(catKg);
+  dashRM.forEach(r=>{const n=matNameFn(r.category);catCost[n]=(catCost[n]||0)+r.amount;});
+  const catLabels=Object.keys(catCost);
+  const catVals=Object.values(catCost);
   const catColors=['#1a5fcb','#0a8a6a','#c08a18','#7F77DD','#c03838','#2d58c2'];
   if(chMatCat)chMatCat.destroy();
   chMatCat=new Chart(document.getElementById('ch-mat-cat'),{
@@ -3063,16 +3436,19 @@ function renderDash(){
     options:{responsive:true,maintainAspectRatio:false,cutout:'64%',plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'DM Sans'},boxWidth:10,padding:12,color:'#546050'}}}}
   });
 
-  /* ── Chart: top 6 lots bar (received vs consumed) ── */
+  /* ── Chart: top 6 lots bar (received vs consumed — KG for sachet, bundles for packing) ── */
   const topLots=dashRM.slice().reverse().slice(0,6);
+  const topLabels=topLots.map(r=>(r.altId||('RM-'+String(r.id).padStart(4,'0')))+(r.isPackingBag?' (bdl)':''));
+  const topReceived=topLots.map(r=>r.isPackingBag?(r.bundles||0):r.qtyKg);
+  const topConsumed=topLots.map(r=>r.isPackingBag?pbConsumed(r):rawmatConsumed(r.id));
   if(chMatLots)chMatLots.destroy();
   chMatLots=new Chart(document.getElementById('ch-mat-lots'),{
     type:'bar',
     data:{
-      labels:topLots.map(r=>r.altId||('RM-'+String(r.id).padStart(4,'0'))),
+      labels:topLabels,
       datasets:[
-        {label:'Received (kg)',data:topLots.map(r=>r.qtyKg),backgroundColor:'rgba(26,95,203,0.25)',borderColor:'#1a5fcb',borderWidth:2,borderRadius:4},
-        {label:'Consumed (kg)',data:topLots.map(r=>rawmatConsumed(r.id)),backgroundColor:'rgba(192,138,24,0.25)',borderColor:'#c08a18',borderWidth:2,borderRadius:4}
+        {label:'Received (kg / bdl)',data:topReceived,backgroundColor:'rgba(26,95,203,0.25)',borderColor:'#1a5fcb',borderWidth:2,borderRadius:4},
+        {label:'Consumed (kg / bdl)',data:topConsumed,backgroundColor:'rgba(192,138,24,0.25)',borderColor:'#c08a18',borderWidth:2,borderRadius:4}
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'DM Sans'},boxWidth:10,padding:8,color:'#546050'}}},scales:{x:{ticks:{font:{size:10,family:'DM Mono'},color:'#7a94b0'},grid:{display:false}},y:{ticks:{font:{size:11},color:'#7a94b0'},grid:{color:'rgba(220,229,240,.6)'},beginAtZero:true}}}
@@ -3081,29 +3457,58 @@ function renderDash(){
   /* ── Raw material utilisation bars ── */
   const matName2=c=>{const m=MAT_CATS.find(x=>x.code===c);return m?m.name:c;};
   const matTotal=exp||1;
-  const matGroups={};
+  const sachetGroups={};
+  const packingGroups={};
   dashRM.forEach(r=>{
     const n=matName2(r.category);
-    if(!matGroups[n])matGroups[n]={in:0,used:0,cost:0};
-    matGroups[n].in+=r.qtyKg; matGroups[n].used+=rawmatConsumed(r.id); matGroups[n].cost+=r.amount;
+    if(r.isPackingBag){
+      if(!packingGroups[n])packingGroups[n]={in:0,used:0,cost:0};
+      packingGroups[n].in+=(r.bundles||0);
+      packingGroups[n].used+=pbConsumed(r);
+      packingGroups[n].cost+=r.amount;
+    } else {
+      if(!sachetGroups[n])sachetGroups[n]={in:0,used:0,cost:0};
+      sachetGroups[n].in+=r.qtyKg;
+      sachetGroups[n].used+=rawmatConsumed(r.id);
+      sachetGroups[n].cost+=r.amount;
+    }
   });
-  const matBarColors={'Sachet Bags':'#1a5fcb','Sachet Bags › Printed Rolls':'#1a5fcb','Sachet Bags › Plain Rolls':'#2d7dd2','Packing Bag':'#0a8a6a'};
-  const matEntries=Object.entries(matGroups).sort((a,b)=>b[1].in-a[1].in);
-  document.getElementById('mat-bars').innerHTML=matEntries.length?matEntries.map(([k,v])=>{
-    const pct=v.in>0?Math.min(100,Math.round(v.used/v.in*100)):0;
-    const col=matBarColors[k]||'#888';
-    return `<div class="prog-wrap" style="margin-bottom:10px">
-      <span class="prog-lbl" style="color:${col};min-width:110px">${k}</span>
-      <div style="flex:1">
-        <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${col}"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-top:2px">
-          <span>${v.used.toFixed(2)} kg used of ${v.in.toFixed(2)} kg</span>
-          <span style="font-family:'DM Mono',monospace">₦${v.cost.toLocaleString(undefined,{maximumFractionDigits:0})}</span>
+  const matBarColors={'Sachet Bags':'#1a5fcb','Sachet Bags › Printed Rolls':'#1a5fcb','Sachet Bags › Plain Rolls':'#2d7dd2','Packing Bag':'#c08a18'};
+  const sachetEntries=Object.entries(sachetGroups).sort((a,b)=>b[1].in-a[1].in);
+  const packingEntries=Object.entries(packingGroups).sort((a,b)=>b[1].in-a[1].in);
+  const allMatBars=[
+    ...sachetEntries.map(([k,v])=>{
+      const pct=v.in>0?Math.min(100,Math.round(v.used/v.in*100)):0;
+      const col=matBarColors[k]||'#1a5fcb';
+      return `<div class="prog-wrap" style="margin-bottom:10px">
+        <span class="prog-lbl" style="color:${col};min-width:110px">${k}</span>
+        <div style="flex:1">
+          <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${col}"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-top:2px">
+            <span>${v.used.toFixed(2)} kg used of ${v.in.toFixed(2)} kg</span>
+            <span style="font-family:'DM Mono',monospace">₦${v.cost.toLocaleString(undefined,{maximumFractionDigits:0})}</span>
+          </div>
         </div>
-      </div>
-      <span class="prog-val">${pct}%</span>
-    </div>`;
-  }).join(''):'<p style="font-size:13px;color:var(--txt3)">No raw material data for this period.</p>';
+        <span class="prog-val">${pct}%</span>
+      </div>`;
+    }),
+    ...packingEntries.map(([k,v])=>{
+      const pct=v.in>0?Math.min(100,Math.round(v.used/v.in*100)):0;
+      const col=matBarColors[k]||'#c08a18';
+      return `<div class="prog-wrap" style="margin-bottom:10px">
+        <span class="prog-lbl" style="color:${col};min-width:110px">${k}</span>
+        <div style="flex:1">
+          <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${col}"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-top:2px">
+            <span>${v.used} bundle${v.used!==1?'s':''} used of ${v.in} bundle${v.in!==1?'s':''} (${v.used*10} / ${v.in*10} packs)</span>
+            <span style="font-family:'DM Mono',monospace">₦${v.cost.toLocaleString(undefined,{maximumFractionDigits:0})}</span>
+          </div>
+        </div>
+        <span class="prog-val">${pct}%</span>
+      </div>`;
+    })
+  ];
+  document.getElementById('mat-bars').innerHTML=allMatBars.length?allMatBars.join(''):'<p style="font-size:13px;color:var(--txt3)">No raw material data for this period.</p>';
 
   /* ── Sales by payment ── */
   const cash=activeSales.filter(s=>s.method==='CASH').reduce((a,s)=>a+s.amount,0);
@@ -3179,6 +3584,11 @@ function closeMo(){document.getElementById('del-mo').classList.remove('open');de
 function confirmDel(){
   if(!delT.t)return;
   const delType=delT.t;
+  const rec=DB[delType].find(r=>r.id===delT.id);
+  // ── Firebase delete ──
+  if(window.fsReady && rec && rec._fbId){
+    fsDeleteDoc(fsDoc(delType, rec._fbId)).catch(e=>console.warn('FS delete:',e));
+  }
   DB[delType]=DB[delType].filter(r=>r.id!==delT.id);
   closeMo();toast('Record deleted','s');
   if(delType==='sales')renderAS('');
