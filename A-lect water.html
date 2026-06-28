@@ -92,7 +92,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font
 .reset-check-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
 .reset-chk{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--brd2);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;color:transparent;background:var(--surf2);transition:all .12s;}
 .reset-chk.on{background:#c03838;border-color:#c03838;color:#fff;}
-/* USER CARDS */
+/* REMAINDER LOT STYLES */
+.badge-rlt{background:linear-gradient(135deg,rgba(127,119,221,.18),rgba(26,95,203,.12));color:#7F77DD;border:1px solid rgba(127,119,221,.4);font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px;}
+.rlt-priority-banner{background:linear-gradient(135deg,rgba(255,180,40,.1),rgba(255,140,20,.07));border-left:3px solid var(--amb-m);border-radius:0 var(--r) var(--r) 0;padding:.5rem .75rem;font-size:11.5px;color:var(--amb);display:flex;align-items:center;gap:7px;margin-bottom:4px;}
 .ucard{display:flex;align-items:center;justify-content:space-between;padding:.75rem .3rem;border-bottom:1px solid var(--brd);gap:10px;flex-wrap:wrap;}
 .ucard:last-child{border-bottom:none;}
 .ucard-av{width:34px;height:34px;border-radius:50%;background:var(--grn-l);color:var(--grn);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -818,9 +820,97 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="srow"><span class="sl">Batches logged</span><span class="sv" id="p-count">0</span></div>
               <div class="srow"><span class="sl">Total bags produced</span><span class="sv" id="p-total">0</span></div>
             </div>
+          </div>
 
+        </div>
+
+        <!-- ROLL LEFTOVER RECONCILIATION -->
+        <div style="margin-top:1.75rem">
+          <div class="ph" style="margin-bottom:1rem">
+            <div>
+              <div class="ph-title" style="font-size:16px"><i class="ti ti-refresh-dot" style="color:var(--grn-m)"></i> End-of-day roll reconciliation</div>
+              <div class="ph-sub">When a roll is not fully used, weigh the leftover and record it here. A remainder lot (RLT/…) will be created and <strong style="color:var(--grn)">must be used first</strong> before any new roll can be picked.</div>
+            </div>
+          </div>
+
+          <!-- Active remainder lots alert -->
+          <div id="recon-active-alert" style="display:none;background:linear-gradient(135deg,rgba(255,180,40,.12),rgba(255,140,20,.08));border:1.5px solid var(--amb-m);border-radius:var(--r-lg);padding:1rem 1.2rem;margin-bottom:1.1rem">
+            <div style="font-size:11px;font-weight:700;color:var(--amb);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px"><i class="ti ti-alert-triangle"></i> Active remainder lots — must be used first</div>
+            <div id="recon-active-list" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px"></div>
+          </div>
+
+          <div class="pos">
+            <!-- RECONCILIATION FORM -->
+            <div class="pos-card">
+              <div class="pos-head">
+                <div class="pos-head-ico" style="background:linear-gradient(135deg,#1a5f4a,#1d9e75)"><i class="ti ti-scale"></i></div>
+                <div><h2>Record leftover roll</h2><p>Weigh the partial roll and log the remaining KG</p></div>
+              </div>
+              <div class="pos-body">
+                <div class="ok" id="recon-ok"><i class="ti ti-circle-check"></i> Remainder lot created!</div>
+                <div class="fg">
+                  <div class="field">
+                    <label>Date</label>
+                    <input type="date" id="recon-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('recon-date','recon-date-label')">
+                    <button class="date-btn" id="recon-date-btn" type="button" onclick="openDatePickerG('recon-date')">
+                      <i class="ti ti-calendar"></i>
+                      <span class="db-label" id="recon-date-label">Today</span>
+                      <span class="db-change">tap to change</span>
+                    </button>
+                  </div>
+                  <div class="field full">
+                    <label>Original lot being reconciled</label>
+                    <select id="recon-lot" onchange="onReconLotChange()">
+                      <option value="">— Select the roll lot used today —</option>
+                    </select>
+                    <div style="font-size:11px;color:var(--txt3);margin-top:5px" id="recon-lot-hint"></div>
+                  </div>
+                  <div class="field">
+                    <label>Leftover KG (physically weighed)</label>
+                    <input type="number" id="recon-leftover-kg" min="0.01" step="0.01" placeholder="e.g. 3.75" oninput="onReconKgInput()">
+                    <div style="font-size:11px;margin-top:5px" id="recon-kg-hint"></div>
+                  </div>
+                  <div class="field">
+                    <label>Remainder ALT ID <span style="font-weight:400;color:var(--txt3)">(auto)</span></label>
+                    <input type="text" id="recon-altid-preview" readonly style="font-family:'DM Mono',monospace;font-weight:700;color:#1a5fcb;background:var(--grn-xl);border-color:var(--grn-m)">
+                  </div>
+                  <div class="field full">
+                    <label>Note (optional)</label>
+                    <input type="text" id="recon-note" placeholder="e.g. Leftover from morning run — machine stopped at 4pm">
+                  </div>
+                </div>
+
+                <!-- Summary box -->
+                <div id="recon-summary" style="display:none;background:var(--surf2);border:1.5px solid var(--brd);border-radius:var(--r);padding:.85rem 1rem;margin-bottom:.9rem">
+                  <div style="font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px"><i class="ti ti-list-check"></i> What will happen</div>
+                  <div style="font-size:12.5px;display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Original lot</span><strong id="rs-orig-id">—</strong></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Available in lot</span><strong id="rs-avail">—</strong></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Leftover being saved</span><strong id="rs-leftover" style="color:var(--grn)">—</strong></div>
+                    <div style="display:flex;justify-content:space-between;border-top:1px solid var(--brd);padding-top:6px"><span style="color:var(--txt2)">Original lot after reconcile</span><strong id="rs-remainder-orig" style="color:var(--red-m)">—</strong></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">New remainder lot (RLT/…)</span><strong id="rs-new-lot" style="color:#1a5fcb">—</strong></div>
+                  </div>
+                </div>
+
+                <div class="f-actions">
+                  <button class="btn btn-primary" onclick="submitReconciliation()" id="recon-submit-btn" disabled style="opacity:.45;cursor:not-allowed">
+                    <i class="ti ti-refresh-dot"></i> Create remainder lot
+                  </button>
+                  <button class="btn btn-outline" onclick="clearRecon()"><i class="ti ti-refresh"></i> Clear</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- RECONCILIATION HISTORY -->
+            <div class="receipt" style="min-width:0">
+              <div class="r-head"><h3><i class="ti ti-history" style="color:#1a5fcb"></i> Remainder lots</h3></div>
+              <div class="r-body" id="recon-history-body">
+                <div class="empty" style="padding:1.5rem 0"><i class="ti ti-scale"></i><p>No remainder lots recorded yet</p></div>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
 
       <!-- RAW MATERIAL INVENTORY -->
@@ -1715,7 +1805,7 @@ const DB={
     {id:2,name:'Owner',username:'admin',password:'admin99',role:'admin',jobRole:'manager',active:true},
     {id:3,name:'Manager',username:'manager',password:'mgr456',role:'manager',jobRole:'manager',active:true},
   ],
-  sales:[],production:[],expenses:[],rawmats:[],
+  sales:[],production:[],expenses:[],rawmats:[],reconciliations:[],
   _id:100,nid(){return++this._id;}
 };
 const MAT_CATS=[
@@ -2289,7 +2379,7 @@ function goPage(name,btn){
   document.getElementById('page-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
   const map={mysales:renderMySales,dash:renderDash,asales:()=>renderAS(''),aprod:renderAP,aexp:renderAE,users:renderUsers,
-    prod:updateProdPanel,rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
+    prod:()=>{updateProdPanel(); populateReconLotSelect(); renderActiveRemainders(); renderReconHistory();},rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
     sale:()=>{ updateStockHint(); },
     attendance:()=>{updateAttStatusBar();renderAttMy();},
     'att-admin':()=>renderAttAdmin(''),
@@ -2925,7 +3015,10 @@ function matLabel(code){
 /* MATERIAL INVENTORY — each "Log raw materials used" entry is a lot; available qty
    is derived live from how much production has already drawn against it */
 function rawmatConsumed(lotId){
-  return DB.production.filter(p=>(p.matSachetLotId===lotId||p.matLotId===lotId)).reduce((a,p)=>a+(p.matSachetQtyUsed||p.matQtyUsed||0),0);
+  const fromProd = DB.production.filter(p=>(p.matSachetLotId===lotId||p.matLotId===lotId)).reduce((a,p)=>a+(p.matSachetQtyUsed||p.matQtyUsed||0),0);
+  // Also count kg consumed by reconciliation closing entries (leftover saved to RLT)
+  const fromRecon = (DB.reconciliations||[]).filter(r=>r.sourceLotId===lotId).reduce((a,r)=>a+(r.kgConsumed||0),0);
+  return fromProd + fromRecon;
 }
 function rawmatAvailable(r){
   return Math.max(0, +(r.qtyKg - rawmatConsumed(r.id)).toFixed(2));
@@ -2937,20 +3030,310 @@ function rawmatAvailBundles(r){
   return Math.max(0, (r.bundles||0)-used);
 }
 
+/* =============================================
+   ROLL LEFTOVER RECONCILIATION
+   ============================================= */
+
+// Generate a remainder ALT ID — prefix RLT/ instead of ALT/
+function genRemainderAltId(dateStr){
+  const d = dateStr || TODAY;
+  const [,mm,dd] = d.split('-');
+  const prefix = 'RLT/'+mm+dd+'/';
+  // Count all existing remainder lots for this date
+  const existing = DB.rawmats.filter(r => r.altId && r.altId.startsWith(prefix));
+  const next = existing.length + 1;
+  return prefix + String(next).padStart(3,'0');
+}
+
+// Populate the reconciliation lot dropdown with currently-open (non-remainder, non-zero) printed rolls lots
+function populateReconLotSelect(){
+  const sel = document.getElementById('recon-lot'); if(!sel) return;
+  const cur = sel.value;
+  // Only non-remainder printed rolls lots that still have available KG
+  const eligibleLots = DB.rawmats.filter(r =>
+    !r.isPackingBag && !r.isRemainder && rawmatAvailable(r) > 0
+  );
+  if(!eligibleLots.length){
+    sel.innerHTML = '<option value="">No open roll lots to reconcile</option>';
+  } else {
+    sel.innerHTML = '<option value="">— Select the roll lot used today —</option>' +
+      eligibleLots.slice().reverse().map(r => {
+        const avail = rawmatAvailable(r);
+        return `<option value="${r.id}">${r.altId} — ${matLabel(r.category)} · ${avail.toFixed(2)} kg remaining</option>`;
+      }).join('');
+    if(eligibleLots.some(r => String(r.id) === cur)) sel.value = cur;
+  }
+  updateReconAltIdPreview();
+  updateReconSummary();
+  renderReconHistory();
+  renderActiveRemainders();
+}
+
+function updateReconAltIdPreview(){
+  const el = document.getElementById('recon-altid-preview'); if(!el) return;
+  const dateVal = document.getElementById('recon-date')?.value || TODAY;
+  el.value = genRemainderAltId(dateVal);
+}
+
+function onReconLotChange(){
+  updateReconSummary();
+  const sel = document.getElementById('recon-lot');
+  const hint = document.getElementById('recon-lot-hint');
+  if(!sel || !sel.value){ if(hint) hint.textContent=''; return; }
+  const r = DB.rawmats.find(x => String(x.id) === sel.value);
+  if(!r || !hint) return;
+  const avail = rawmatAvailable(r);
+  hint.innerHTML = `<span style="color:var(--grn)">${avail.toFixed(2)} kg available in this lot</span> — enter how much was physically leftover on the roll`;
+  updateReconSummary();
+}
+
+function onReconKgInput(){
+  updateReconSummary();
+}
+
+function updateReconSummary(){
+  const sel = document.getElementById('recon-lot');
+  const kgInput = document.getElementById('recon-leftover-kg');
+  const summary = document.getElementById('recon-summary');
+  const submitBtn = document.getElementById('recon-submit-btn');
+  const kgHint = document.getElementById('recon-kg-hint');
+
+  if(!sel || !sel.value || !kgInput){
+    if(summary) summary.style.display='none';
+    if(submitBtn){ submitBtn.disabled=true; submitBtn.style.opacity='.45'; submitBtn.style.cursor='not-allowed'; }
+    return;
+  }
+  const lot = DB.rawmats.find(r => String(r.id) === sel.value);
+  if(!lot){ if(summary) summary.style.display='none'; return; }
+
+  const avail = rawmatAvailable(lot);
+  const leftoverKg = parseFloat(kgInput.value) || 0;
+  const consumedByClose = avail - leftoverKg; // what will be "used" to close original lot
+
+  // Validation
+  let valid = false;
+  if(leftoverKg <= 0){
+    if(kgHint) kgHint.innerHTML = '';
+  } else if(leftoverKg >= avail){
+    if(kgHint) kgHint.innerHTML = `<span style="color:var(--red-m)">Leftover (${leftoverKg} kg) must be less than available (${avail.toFixed(2)} kg)</span>`;
+  } else {
+    if(kgHint) kgHint.innerHTML = `<span style="color:var(--grn)">${consumedByClose.toFixed(2)} kg will be marked used · ${leftoverKg} kg saved as remainder lot</span>`;
+    valid = true;
+  }
+
+  if(summary) summary.style.display = valid ? '' : 'none';
+  if(valid && summary){
+    const dateVal = document.getElementById('recon-date')?.value || TODAY;
+    const newId = genRemainderAltId(dateVal);
+    document.getElementById('rs-orig-id').textContent = lot.altId || '—';
+    document.getElementById('rs-avail').textContent = avail.toFixed(2)+' kg';
+    document.getElementById('rs-leftover').textContent = leftoverKg.toFixed(2)+' kg';
+    document.getElementById('rs-remainder-orig').textContent = '0.00 kg (fully closed)';
+    document.getElementById('rs-new-lot').textContent = newId+' · '+leftoverKg.toFixed(2)+' kg';
+  }
+
+  if(submitBtn){
+    submitBtn.disabled = !valid;
+    submitBtn.style.opacity = valid ? '1' : '.45';
+    submitBtn.style.cursor = valid ? 'pointer' : 'not-allowed';
+  }
+}
+
+function submitReconciliation(){
+  const sel = document.getElementById('recon-lot');
+  const kgInput = document.getElementById('recon-leftover-kg');
+  const noteInput = document.getElementById('recon-note');
+  if(!sel || !sel.value){ toast('Select a lot to reconcile','e'); return; }
+
+  const lot = DB.rawmats.find(r => String(r.id) === sel.value);
+  if(!lot){ toast('Lot not found','e'); return; }
+
+  const avail = rawmatAvailable(lot);
+  const leftoverKg = parseFloat(kgInput.value) || 0;
+  const dateVal = document.getElementById('recon-date')?.value || TODAY;
+
+  if(leftoverKg <= 0){ toast('Enter a leftover KG greater than 0','e'); return; }
+  if(leftoverKg >= avail){ toast('Leftover must be less than available KG in lot','e'); return; }
+
+  const consumedByClose = avail - leftoverKg;
+  const note = noteInput ? noteInput.value.trim() : '';
+  const newAltId = genRemainderAltId(dateVal);
+
+  // 1. Write a "closing" production-style consumption entry to fully close the original lot
+  //    We use a special reconciliation record (not a production batch) stored in a new collection
+  const closeEntry = {
+    id: DB.nid(),
+    type: 'recon_close',
+    date: dateVal,
+    sourceLotId: lot.id,
+    sourceLotAltId: lot.altId,
+    kgConsumed: consumedByClose,
+    leftoverKg,
+    remainderAltId: newAltId,
+    note,
+    staff: CU.name,
+    staffId: CU.id,
+    ts: Date.now()
+  };
+  if(!DB.reconciliations) DB.reconciliations = [];
+  DB.reconciliations.push(closeEntry);
+
+  // 2. Create the remainder rawmat entry — same category/unitCost, isRemainder flag
+  const remEntry = {
+    id: DB.nid(),
+    altId: newAltId,
+    date: dateVal,
+    category: lot.category,
+    isPackingBag: false,
+    isRemainder: true,
+    sourceAltId: lot.altId,
+    sourceLotId: lot.id,
+    noRoll: 1,
+    qtyKg: leftoverKg,
+    unitCost: lot.unitCost,
+    amount: leftoverKg * lot.unitCost,
+    rolls: [leftoverKg],
+    bundles: 0,
+    totalPacks: 0,
+    note: 'Leftover from '+lot.altId+(note?' — '+note:''),
+    staff: CU.name,
+    staffId: CU.id,
+    ts: Date.now()
+  };
+  DB.rawmats.push(remEntry);
+
+  // 3. Firebase saves
+  if(window.fsReady){
+    const cleanClose = Object.fromEntries(Object.entries(closeEntry).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('reconciliations'), cleanClose).catch(e=>console.warn('FS recon write:',e));
+    const cleanRem = Object.fromEntries(Object.entries(remEntry).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('rawmats'), cleanRem).then(ref=>{ remEntry._fbId=ref.id; }).catch(e=>console.warn('FS rem write:',e));
+  }
+
+  showOk('recon-ok');
+  clearRecon();
+  toast('Remainder lot '+newAltId+' created — it will appear first in the lot selector','s');
+  populateReconLotSelect();
+  populateMatLotSelect();
+  updateRMPanel();
+  renderRawMat('');
+  renderInvSummary('');
+}
+
+function clearRecon(){
+  const kgInput = document.getElementById('recon-leftover-kg');
+  const noteInput = document.getElementById('recon-note');
+  if(kgInput) kgInput.value = '';
+  if(noteInput) noteInput.value = '';
+  const dateInput = document.getElementById('recon-date');
+  const dateLbl = document.getElementById('recon-date-label');
+  if(dateInput) dateInput.value = '';
+  if(dateLbl) dateLbl.textContent = 'Today';
+  const sel = document.getElementById('recon-lot');
+  if(sel) sel.value = '';
+  const hint = document.getElementById('recon-lot-hint');
+  if(hint) hint.textContent = '';
+  const kgHint = document.getElementById('recon-kg-hint');
+  if(kgHint) kgHint.textContent = '';
+  updateReconSummary();
+  updateReconAltIdPreview();
+}
+
+function renderReconHistory(){
+  const body = document.getElementById('recon-history-body'); if(!body) return;
+  const remainders = DB.rawmats.filter(r => r.isRemainder).slice().reverse();
+  if(!remainders.length){
+    body.innerHTML = '<div class="empty" style="padding:1.5rem 0"><i class="ti ti-scale"></i><p>No remainder lots recorded yet</p></div>';
+    return;
+  }
+  body.innerHTML = remainders.map(r => {
+    const avail = rawmatAvailable(r);
+    const used = r.qtyKg - avail;
+    const pct = r.qtyKg > 0 ? Math.min(100, Math.round(used/r.qtyKg*100)) : 100;
+    const depleted = avail <= 0;
+    return `
+    <div class="srow" style="flex-direction:column;align-items:flex-start;gap:5px;padding:.75rem 0;border-bottom:1px solid var(--brd)">
+      <div style="display:flex;align-items:center;gap:8px;width:100%">
+        <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:#7F77DD">${r.altId}</span>
+        <span class="badge-rlt"><i class="ti ti-refresh-dot" style="font-size:9px"></i> Remainder</span>
+        ${depleted ? '<span class="badge br" style="font-size:9px">Used up</span>' : '<span class="badge bg" style="font-size:9px">Active</span>'}
+      </div>
+      <div style="font-size:11px;color:var(--txt3)">From ${r.sourceAltId||'—'} · ${fmtDate(r.date)} · ${matLabel(r.category)}</div>
+      <div style="display:flex;gap:10px;font-size:12px;margin-top:2px">
+        <span>${r.qtyKg.toFixed(2)} kg original</span>
+        <span style="color:${depleted?'var(--red-m)':'var(--grn)'}">· ${avail.toFixed(2)} kg left</span>
+      </div>
+      <div style="width:100%;height:5px;background:var(--surf2);border-radius:3px;overflow:hidden;margin-top:3px">
+        <div style="width:${pct}%;height:100%;background:${depleted?'var(--red-m)':'#1a5fcb'};border-radius:3px;transition:width .3s"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderActiveRemainders(){
+  const alert = document.getElementById('recon-active-alert'); if(!alert) return;
+  const list = document.getElementById('recon-active-list');
+  const active = DB.rawmats.filter(r => r.isRemainder && rawmatAvailable(r) > 0);
+  if(!active.length){
+    alert.style.display = 'none';
+    return;
+  }
+  alert.style.display = '';
+  list.innerHTML = active.map(r => {
+    const avail = rawmatAvailable(r);
+    return `<div style="display:flex;align-items:center;gap:8px;background:rgba(255,180,40,.08);border:1px solid rgba(255,180,40,.25);border-radius:var(--r);padding:.4rem .7rem">
+      <i class="ti ti-alert-triangle" style="color:var(--amb-m);font-size:13px;flex-shrink:0"></i>
+      <span><strong style="font-family:'DM Mono',monospace;color:#7F77DD">${r.altId}</strong> — ${avail.toFixed(2)} kg remaining (from ${r.sourceAltId||'—'}) — <strong style="color:var(--amb)">use this first</strong></span>
+    </div>`;
+  }).join('');
+}
+
 function populateMatLotSelect(){
   // PRINTED ROLLS lots (A0001)
   const sachetSel=document.getElementById('p-mat-sachet'); if(!sachetSel) return;
   const curSachet=sachetSel.value;
-  const sachetLots=DB.rawmats.filter(r=>!r.isPackingBag && rawmatAvailable(r)>0);
-  if(!sachetLots.length){
+
+  // Split into remainder lots (RLT/) and regular lots — remainders always go first
+  const allSachetLots = DB.rawmats.filter(r=>!r.isPackingBag && rawmatAvailable(r)>0);
+  const remainderLots = allSachetLots.filter(r=>r.isRemainder);
+  const regularLots   = allSachetLots.filter(r=>!r.isRemainder);
+  const hasActiveRemainders = remainderLots.length > 0;
+
+  if(!allSachetLots.length){
     sachetSel.innerHTML='<option value="">No printed rolls lots in inventory</option>';
   } else {
-    sachetSel.innerHTML='<option value="">— Select printed rolls lot —</option>'+sachetLots.slice().reverse().map(r=>{
-      const avail=rawmatAvailable(r);
-      return `<option value="${r.id}">${r.altId||('RM-'+String(r.id).padStart(4,'0'))} — ${matLabel(r.category)} · ${avail.toFixed(2)} kg avail</option>`;
-    }).join('');
-    if(sachetLots.some(r=>String(r.id)===curSachet)) sachetSel.value=curSachet;
+    let opts = '<option value="">— Select printed rolls lot —</option>';
+    // Remainder lots first (mandatory use)
+    if(remainderLots.length){
+      opts += '<optgroup label="⚠ Remainder lots — use these first">';
+      opts += remainderLots.map(r=>{
+        const avail=rawmatAvailable(r);
+        return `<option value="${r.id}" data-remainder="1">[RLT] ${r.altId} ← from ${r.sourceAltId||'?'} · ${avail.toFixed(2)} kg</option>`;
+      }).join('');
+      opts += '</optgroup>';
+    }
+    // Regular lots — locked out if remainders exist
+    if(regularLots.length){
+      const locked = hasActiveRemainders;
+      opts += `<optgroup label="${locked?'🔒 New lots (use remainder lots first)':'New roll lots'}">`;
+      opts += regularLots.slice().reverse().map(r=>{
+        const avail=rawmatAvailable(r);
+        return `<option value="${r.id}" ${locked?'disabled':''} data-locked="${locked?'1':'0'}">${r.altId||('RM-'+String(r.id).padStart(4,'0'))} — ${matLabel(r.category)} · ${avail.toFixed(2)} kg avail</option>`;
+      }).join('');
+      opts += '</optgroup>';
+    }
+    sachetSel.innerHTML = opts;
+    // Auto-select remainder lot if only one active and nothing selected
+    if(remainderLots.length === 1 && !curSachet){
+      sachetSel.value = String(remainderLots[0].id);
+    } else if(allSachetLots.some(r=>String(r.id)===curSachet)){
+      sachetSel.value=curSachet;
+    }
   }
+
+  // Refresh the active remainder alert banner on production page
+  renderActiveRemainders();
+  populateReconLotSelect();
   // PACKING BAG lots (A0002)
   const packingSel=document.getElementById('p-mat-packing'); if(!packingSel) return;
   const curPacking=packingSel.value;
@@ -2977,7 +3360,8 @@ function onMatLotChange(type){
     if(!sel.value){ hint.textContent='Select a printed rolls lot to see availability'; qtyInput.removeAttribute('max'); return; }
     const r=DB.rawmats.find(x=>String(x.id)===sel.value);
     const avail=r?rawmatAvailable(r):0;
-    hint.textContent=avail.toFixed(2)+' kg available in this printed rolls lot';
+    const remBadge = r&&r.isRemainder ? ' <span class="badge-rlt" style="vertical-align:middle"><i class="ti ti-refresh-dot" style="font-size:9px"></i> Remainder lot</span>' : '';
+    hint.innerHTML=avail.toFixed(2)+' kg available in this lot'+remBadge;
     qtyInput.max=avail;
   } else {
     const sel=document.getElementById('p-mat-packing');
@@ -3351,10 +3735,10 @@ function renderInvSummary(q){
       consumedCell=consumed.toFixed(2)+' kg';
       availCell=`<span style="font-weight:600;color:${avail<=0?'var(--red-m)':avail<r.qtyKg*.25?'var(--amb-m)':'var(--grn)'}">${avail.toFixed(2)} kg</span>`;
     }
-    return `<tr>
-      <td><span style="font-family:'DM Mono',monospace;font-size:11.5px;font-weight:700;color:#1a5fcb;background:var(--grn-l);padding:3px 7px;border-radius:5px">${r.altId||'—'}</span></td>
+    return `<tr style="${r.isRemainder?'background:rgba(127,119,221,.06);':''}">
+      <td><span style="font-family:'DM Mono',monospace;font-size:11.5px;font-weight:700;color:${r.isRemainder?'#7F77DD':'#1a5fcb'};background:${r.isRemainder?'rgba(127,119,221,.12)':'var(--grn-l)'};padding:3px 7px;border-radius:5px">${r.altId||'—'}</span>${r.isRemainder?'<span class="badge-rlt" style="margin-left:5px;vertical-align:middle"><i class="ti ti-refresh-dot" style="font-size:9px"></i> RLT</span>':''}</td>
       <td>${fmtDate(r.date)}</td>
-      <td><span class="badge ${r.isPackingBag?'ba':'bt'}">${matName(r.category)}</span></td>
+      <td><span class="badge ${r.isPackingBag?'ba':'bt'}">${matName(r.category)}</span>${r.isRemainder?`<div style="font-size:10px;color:var(--txt3);margin-top:2px">from ${r.sourceAltId||'—'}</div>`:''}</td>
       <td style="font-weight:600">${r.isPackingBag?(r.totalPacks||r.bundles||0)+' packs':r.qtyKg.toFixed(2)+' kg'}</td>
       <td>${consumedCell}</td>
       <td>${availCell}</td>
