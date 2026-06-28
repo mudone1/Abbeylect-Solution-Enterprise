@@ -1904,6 +1904,75 @@ let _pendingLoginUser = null;
 let _geoMode = 'login';
 
 /* =============================================
+   AUTO SIGN-OUT HOUR — must be declared before doLogin()
+   ============================================= */
+const AUTO_SIGNOUT_HOUR = 21; // 9pm, 24h clock
+
+const TODAY = new Date().toISOString().split('T')[0];
+
+/* =============================================
+   DATE RANGE FILTERS (My Sales, Dashboard, All Sales, All Production, All Expenses)
+   ============================================= */
+const DR_CFG = {
+  mysales:{render:()=>renderMySales(), label:'My sales'},
+  dash:{render:()=>renderDash(), label:'Dashboard'},
+  asales:{render:()=>{const i=document.getElementById('as-search'); renderAS(i?i.value:'');}, label:'All sales'},
+  aprod:{render:()=>renderAP(), label:'All production'},
+  aexp:{render:()=>renderAE(), label:'All expenses'}
+};
+let DR = {mysales:{from:null,to:null},dash:{from:null,to:null},asales:{from:null,to:null},aprod:{from:null,to:null},aexp:{from:null,to:null}};
+const EXP_CATS_BASE = ['Operator','Fuel','Repair','Driver','Maintenance','Equipment & Machinery',
+  'Labor & Staff','Logistics','Regulatory','Admin','Marketing','Security','Miscellaneous'];
+
+const ALL_PAGES = [
+  {key:'sale',   label:'Record sale',          icon:'ti-shopping-cart'},
+  {key:'prod',   label:'Log production',       icon:'ti-packages'},
+  {key:'rawmat', label:'Raw material inv.',    icon:'ti-box-seam'},
+  {key:'exp',    label:'Log expense',          icon:'ti-receipt-2'},
+  {key:'mysales',label:'My sales',             icon:'ti-clock-hour-4'},
+  {key:'dash',   label:'Dashboard',            icon:'ti-layout-dashboard'},
+  {key:'asales', label:'All sales',            icon:'ti-table'},
+  {key:'aprod',  label:'All production',       icon:'ti-building-factory-2'},
+  {key:'aexp',   label:'All expenses',         icon:'ti-report-money'},
+  {key:'users',  label:'Manage staff',         icon:'ti-users'},
+  {key:'att-admin', label:'Attendance log',    icon:'ti-calendar-stats'},
+  {key:'geo-settings', label:'Store location', icon:'ti-map-pin-cog'},
+  {key:'reset',  label:'Reset system data',    icon:'ti-database-x'},
+];
+const ALL_ACTIONS = [
+  {key:'void_sale',   label:'Void / restore sales',  icon:'ti-ban'},
+  {key:'delete_rec',  label:'Delete records',         icon:'ti-trash'},
+  {key:'geo_bypass',  label:'Bypass geofence',        icon:'ti-map-pin-off'},
+  {key:'add_exp_cat', label:'Add expense categories', icon:'ti-tag'},
+  {key:'export_csv',  label:'Export CSV',             icon:'ti-download'},
+];
+
+// Default permission sets per job role
+const JOB_ROLE_DEFAULTS = {
+  supervisor:{
+    label:'Supervisor', pages:['sale','prod','rawmat','exp','mysales','dash','asales','aprod','aexp','att-admin'],
+    actions:['void_sale','delete_rec','export_csv','add_exp_cat']
+  },
+  manager:{
+    label:'Manager', pages:['sale','prod','rawmat','exp','mysales','dash','asales','aprod','aexp','users','att-admin','geo-settings','reset'],
+    actions:['void_sale','delete_rec','geo_bypass','add_exp_cat','export_csv']
+  },
+  driver:{
+    label:'Driver', pages:['sale','mysales'],
+    actions:[]
+  },
+  operator:{
+    label:'Operator', pages:['prod','rawmat','mysales'],
+    actions:[]
+  },
+  sales:{
+    label:'Sales Personnel', pages:['sale','exp','mysales'],
+    actions:['export_csv']
+  },
+};
+
+
+/* =============================================
    AUTH  (with geofencing)
    ============================================= */
 function doLogin(){
@@ -2152,8 +2221,6 @@ let _attClockInterval = null;
    still "signed in" is auto-closed so admins can see
    who's been ignoring sign-out)
    ============================================= */
-const AUTO_SIGNOUT_HOUR = 21; // 9pm, 24h clock
-
 function checkAutoSignOut(){
   const now = new Date();
   if(now.getHours() < AUTO_SIGNOUT_HOUR) return;
@@ -2396,19 +2463,6 @@ function setDates(){
 }
 
 /* SALE */
-const TODAY = new Date().toISOString().split('T')[0];
-
-/* =============================================
-   DATE RANGE FILTERS (My Sales, Dashboard, All Sales, All Production, All Expenses)
-   ============================================= */
-const DR_CFG = {
-  mysales:{render:()=>renderMySales(), label:'My sales'},
-  dash:{render:()=>renderDash(), label:'Dashboard'},
-  asales:{render:()=>{const i=document.getElementById('as-search'); renderAS(i?i.value:'');}, label:'All sales'},
-  aprod:{render:()=>renderAP(), label:'All production'},
-  aexp:{render:()=>renderAE(), label:'All expenses'}
-};
-let DR = {mysales:{from:null,to:null},dash:{from:null,to:null},asales:{from:null,to:null},aprod:{from:null,to:null},aexp:{from:null,to:null}};
 
 function inDR(key, dateStr){
   const r = DR[key];
@@ -3758,8 +3812,6 @@ function renderInvSummary(q){
 
 /* EXPENSE */
 /* EXPENSE CATEGORIES — base list + manager-added custom categories (persisted) */
-const EXP_CATS_BASE = ['Operator','Fuel','Repair','Driver','Maintenance','Equipment & Machinery',
-  'Labor & Staff','Logistics','Regulatory','Admin','Marketing','Security','Miscellaneous'];
 
 function loadCustomExpCats(){
   try{
@@ -4310,53 +4362,6 @@ function renderDash(){
    ============================================= */
 
 // All pages and actions that can be individually toggled
-const ALL_PAGES = [
-  {key:'sale',   label:'Record sale',          icon:'ti-shopping-cart'},
-  {key:'prod',   label:'Log production',       icon:'ti-packages'},
-  {key:'rawmat', label:'Raw material inv.',    icon:'ti-box-seam'},
-  {key:'exp',    label:'Log expense',          icon:'ti-receipt-2'},
-  {key:'mysales',label:'My sales',             icon:'ti-clock-hour-4'},
-  {key:'dash',   label:'Dashboard',            icon:'ti-layout-dashboard'},
-  {key:'asales', label:'All sales',            icon:'ti-table'},
-  {key:'aprod',  label:'All production',       icon:'ti-building-factory-2'},
-  {key:'aexp',   label:'All expenses',         icon:'ti-report-money'},
-  {key:'users',  label:'Manage staff',         icon:'ti-users'},
-  {key:'att-admin', label:'Attendance log',    icon:'ti-calendar-stats'},
-  {key:'geo-settings', label:'Store location', icon:'ti-map-pin-cog'},
-  {key:'reset',  label:'Reset system data',    icon:'ti-database-x'},
-];
-const ALL_ACTIONS = [
-  {key:'void_sale',   label:'Void / restore sales',  icon:'ti-ban'},
-  {key:'delete_rec',  label:'Delete records',         icon:'ti-trash'},
-  {key:'geo_bypass',  label:'Bypass geofence',        icon:'ti-map-pin-off'},
-  {key:'add_exp_cat', label:'Add expense categories', icon:'ti-tag'},
-  {key:'export_csv',  label:'Export CSV',             icon:'ti-download'},
-];
-
-// Default permission sets per job role
-const JOB_ROLE_DEFAULTS = {
-  supervisor:{
-    label:'Supervisor', pages:['sale','prod','rawmat','exp','mysales','dash','asales','aprod','aexp','att-admin'],
-    actions:['void_sale','delete_rec','export_csv','add_exp_cat']
-  },
-  manager:{
-    label:'Manager', pages:['sale','prod','rawmat','exp','mysales','dash','asales','aprod','aexp','users','att-admin','geo-settings','reset'],
-    actions:['void_sale','delete_rec','geo_bypass','add_exp_cat','export_csv']
-  },
-  driver:{
-    label:'Driver', pages:['sale','mysales'],
-    actions:[]
-  },
-  operator:{
-    label:'Operator', pages:['prod','rawmat','mysales'],
-    actions:[]
-  },
-  sales:{
-    label:'Sales Personnel', pages:['sale','exp','mysales'],
-    actions:['export_csv']
-  },
-};
-
 function defaultPermsForJobRole(jobRole){
   const def = JOB_ROLE_DEFAULTS[jobRole] || JOB_ROLE_DEFAULTS.sales;
   const pages = {};
