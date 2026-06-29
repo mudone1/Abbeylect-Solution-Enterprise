@@ -1805,7 +1805,7 @@ const DB={
     {id:2,name:'Owner',username:'admin',password:'admin99',role:'admin',jobRole:'manager',active:true},
     {id:3,name:'Manager',username:'manager',password:'mgr456',role:'manager',jobRole:'manager',active:true},
   ],
-  sales:[],production:[],expenses:[],rawmats:[],reconciliations:[],
+  sales:[],production:[],expenses:[],rawmats:[],reconciliations:[],attendance:[],
   _id:100,nid(){return++this._id;}
 };
 const MAT_CATS=[
@@ -1839,6 +1839,8 @@ const DR_CFG = {
 let DR = {mysales:{from:null,to:null},dash:{from:null,to:null},asales:{from:null,to:null},aprod:{from:null,to:null},aexp:{from:null,to:null}};
 const EXP_CATS_BASE = ['Operator','Fuel','Repair','Driver','Maintenance','Equipment & Machinery',
   'Labor & Staff','Logistics','Regulatory','Admin','Marketing','Security','Miscellaneous'];
+// Custom expense categories (persisted in localStorage, loaded at startup)
+let CUSTOM_EXP_CATS = (function(){ try{ const r=localStorage.getItem('xcel_exp_cats'); return r?JSON.parse(r):[]; }catch(e){ return []; } })();
 const ALL_PAGES = [
   {key:'sale',   label:'Record sale',          icon:'ti-shopping-cart'},
   {key:'prod',   label:'Log production',       icon:'ti-packages'},
@@ -2028,16 +2030,14 @@ function geoAdminBypass(){
 function finaliseLogin(user){
   CU=user;
   // Ensure permissions object exists (back-compat for admin + seeded users)
-  if(!CU.permissions){
-    if(CU.role==='admin'||CU.role==='manager'){
-      // full access
-      const pages={}, actions={};
-      ALL_PAGES.forEach(p=>pages[p.key]=true);
-      ALL_ACTIONS.forEach(a=>actions[a.key]=true);
-      CU.permissions={pages,actions};
-    } else {
-      CU.permissions = defaultPermsForJobRole(CU.jobRole||'staff');
-    }
+  if(CU.role==='admin'||CU.role==='manager'){
+    // Always rebuild full permissions for admin/manager — never inherit stale state
+    const pages={}, actions={};
+    ALL_PAGES.forEach(p=>pages[p.key]=true);
+    ALL_ACTIONS.forEach(a=>actions[a.key]=true);
+    CU.permissions={pages,actions};
+  } else if(!CU.permissions){
+    CU.permissions = defaultPermsForJobRole(CU.jobRole||'staff');
   }
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').classList.add('on');
@@ -2107,10 +2107,18 @@ async function loadFromFirebase(){
       const snap=await fsGetDocs(fsCol(col));
       snap.forEach(d=>{
         const data={...d.data(),_fbId:d.id};
-        // Avoid duplicates — match by _fbId or by ts+type for sales
+        // Avoid duplicates — match by _fbId first, then by numeric id
         if(!DB[col].find(r=>r._fbId===data._fbId)){
           if(!data.id) data.id=DB.nid();
-          DB[col].push(data);
+          // Also skip if a local record with the same id already exists (prevents ghost duplicates when Firebase write callback was delayed)
+          const idStr=String(data.id);
+          if(!DB[col].find(r=>String(r.id)===idStr)){
+            DB[col].push(data);
+          } else {
+            // Merge _fbId onto the existing local record so future reloads dedup correctly
+            const existing=DB[col].find(r=>String(r.id)===idStr);
+            if(existing && !existing._fbId) existing._fbId=data._fbId;
+          }
         }
       });
     }
@@ -2145,6 +2153,9 @@ function checkAutoSignOut(){
   let changed = false, closedCurrentUser = false;
   DB.attendance.forEach(r=>{
     if(r.date===todayKey && !r.signOut){
+      // Don't auto-sign-out admin users
+      const recUser = DB.users.find(u=>u.id===r.userId);
+      if(recUser && recUser.role==='admin') return;
       r.signOut = cutoff.toISOString();
       r.autoSignOut = true;
       changed = true;
@@ -2161,7 +2172,7 @@ function checkAutoSignOut(){
     renderAttMy();
     updateAttStatusBar();
   }
-  if(closedCurrentUser){
+  if(closedCurrentUser && CU && CU.role!=='admin'){
     toast("It's past 9:00 PM (store closing time) — you were automatically signed out because you didn't sign out yourself. Please remember to sign out at the end of your shift.",'e');
     setTimeout(()=>doLogout(), 3000);
   }
@@ -2253,8 +2264,7 @@ function startAttClock(){
   const tick=()=>{
     const el=document.getElementById('att-live-clock');
     if(el) el.textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
-    // keep the "since X · Yh Zm elapsed" line and sign-out gating accurate every second
-    checkAutoSignOut();
+    // keep the "since X · Yh Zm elapsed" line accurate every second
     updateAttStatusBar();
     // also re-render the attendance tables periodically so durations/counts
     // for the active staff and admin views stay up to date in real time
@@ -2991,11 +3001,12 @@ function rawmatAvailable(r){
 }
 /* ── rawmat availability helpers ── */
 function rawmatAvailBundles(r){
-  // packing bags: bundles field now stores packs directly
+  // packing bags: bundles field stores packs directly (totalPacks is a legacy alias)
   // Use String() comparison to handle mixed number/string IDs that can occur after Firebase reload
   const rid=String(r.id);
   const used=DB.production.filter(p=>String(p.matPackingLotId)===rid).reduce((a,p)=>a+(p.matPackingBundles||0),0);
-  return Math.max(0, (r.bundles||0)-used);
+  const total = r.packs || r.bundles || r.totalPacks || 0; // packs is canonical; bundles/totalPacks are legacy field names
+  return Math.max(0, total-used);
 }
 
 /* =============================================
@@ -3161,8 +3172,7 @@ function submitReconciliation(){
     unitCost: lot.unitCost,
     amount: leftoverKg * lot.unitCost,
     rolls: [leftoverKg],
-    bundles: 0,
-    totalPacks: 0,
+    packs: 0,
     note: 'Leftover from '+lot.altId+(note?' — '+note:''),
     staff: CU.name,
     staffId: CU.id,
@@ -3578,14 +3588,13 @@ function submitRawMat(){
   const note=document.getElementById('rm-note').value;
   const altId=genAltId(date);
   const matName=c=>{const m=MAT_CATS.find(x=>x.code===c);return m?m.name:c;};
-  let noRoll=0,qtyKg=0,unitCost=0,amount=0,rolls=[],bundles=0,totalPacks=0;
+  let noRoll=0,qtyKg=0,unitCost=0,amount=0,rolls=[],packs=0;
   if(isPackingBag){
-    bundles=parseInt(document.getElementById('rm-bundle-qty').value)||0; // 'bundles' field now stores packs directly
+    packs=parseInt(document.getElementById('rm-bundle-qty').value)||0;
     unitCost=parseFloat(document.getElementById('rm-bundle-cost').value)||0;
     if(!bundles){toast('Enter quantity in packs','e');return;}
     if(!unitCost){toast('Enter unit cost per pack','e');return;}
-    totalPacks=bundles; // packs entered directly — no ×10 conversion
-    amount=bundles*unitCost;
+    amount=packs*unitCost;
     qtyKg=0;
   } else {
     unitCost=parseFloat(document.getElementById('rm-cost').value)||0;
@@ -3596,7 +3605,7 @@ function submitRawMat(){
     qtyKg=rolls.reduce((a,b)=>a+b,0);
     amount=qtyKg*unitCost;
   }
-  DB.rawmats.push({id:DB.nid(),altId,date,category,isPackingBag,noRoll,qtyKg,unitCost,amount,rolls,bundles,totalPacks,note,staff:CU.name,staffId:CU.id});
+  DB.rawmats.push({id:DB.nid(),altId,date,category,isPackingBag,noRoll,qtyKg,unitCost,amount,rolls,packs,note,staff:CU.name,staffId:CU.id});
   // ── Firebase save ──
   if(window.fsReady){
     const rm=DB.rawmats[DB.rawmats.length-1];
@@ -3607,7 +3616,7 @@ function submitRawMat(){
   updateRMPanel(); renderRawMat(''); updateBatchMetricsPreview(); populateMatLotSelect(); renderInvSummary(''); updateRmAltIdPreview();
   // Show ID popup
   document.getElementById('matid-code').textContent=altId;
-  const subLine=isPackingBag?totalPacks+' packs':qtyKg.toFixed(2)+' kg';
+  const subLine=isPackingBag?packs+' packs':qtyKg.toFixed(2)+' kg';
   document.getElementById('matid-sub').textContent=matName(category)+' · '+subLine+' · '+fmtDate(date);
   document.getElementById('matid-mo').classList.add('open');
 }
@@ -3638,8 +3647,8 @@ function renderRawMat(q){
     <td><span style="font-family:'DM Mono',monospace;font-size:11.5px;font-weight:700;color:#1a5fcb;background:var(--grn-l);padding:3px 7px;border-radius:5px">${r.altId||'—'}</span></td>
     <td>${fmtDate(r.date)}</td>
     <td><span class="badge bt">${matName(r.category)}</span></td>
-    <td>${r.isPackingBag?r.bundles+' packs':r.noRoll+' rolls'}</td>
-    <td style="font-weight:600">${r.isPackingBag?(r.totalPacks+' packs'):r.qtyKg.toFixed(2)+' kg'}</td>
+    <td>${r.isPackingBag?(r.packs||r.bundles||0)+' packs':r.noRoll+' rolls'}</td>
+    <td style="font-weight:600">${r.isPackingBag?((r.packs||r.bundles||r.totalPacks||0)+' packs'):r.qtyKg.toFixed(2)+' kg'}</td>
     <td>${r.isPackingBag?'₦'+r.unitCost.toLocaleString()+'/pack':'₦'+r.unitCost.toLocaleString()+'/kg'}</td>
     <td style="font-weight:600">₦${r.amount.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
     <td class="fig-cell" title="${r.isPackingBag?'':r.rolls.join(', ')}">${r.isPackingBag?'—':r.rolls.join(', ')}</td>
@@ -3660,8 +3669,8 @@ function renderInvSummary(q){
   const totKgLeft=Math.max(0,totKgIn-totKgUsed);
 
   // Packing bundle metrics
-  const pbBundlesUsed=r=>DB.production.filter(p=>p.matPackingLotId===r.id).reduce((a,p)=>a+(p.matPackingBundles||0),0);
-  const totPbIn=packingRM.reduce((a,r)=>a+(r.bundles||0),0);
+  const pbBundlesUsed=r=>DB.production.filter(p=>String(p.matPackingLotId)===String(r.id)).reduce((a,p)=>a+(p.matPackingBundles||0),0);
+  const totPbIn=packingRM.reduce((a,r)=>a+(r.packs||r.bundles||0),0);
   const totPbUsed=packingRM.reduce((a,r)=>a+pbBundlesUsed(r),0);
   const totPbLeft=Math.max(0,totPbIn-totPbUsed);
   const activePbLots=packingRM.filter(r=>rawmatAvailBundles(r)>0).length;
@@ -3686,11 +3695,12 @@ function renderInvSummary(q){
     let pct, barCol, badge, consumedCell, availCell;
     if(r.isPackingBag){
       const pbUsed=pbBundlesUsed(r);
-      const pbAvail=Math.max(0,(r.bundles||0)-pbUsed);
-      pct=(r.bundles||0)>0?Math.min(100,Math.round(pbUsed/(r.bundles)*100)):0;
+      const rPacks=r.packs||r.bundles||0;
+      const pbAvail=Math.max(0,rPacks-pbUsed);
+      pct=rPacks>0?Math.min(100,Math.round(pbUsed/rPacks*100)):0;
       barCol=pct>=90?'#c03838':pct>=60?'#c08a18':'#c08a18';
       const depleted=pbAvail<=0;
-      const low=!depleted&&pbAvail<(r.bundles||0)*.25;
+      const low=!depleted&&pbAvail<rPacks*.25;
       badge=depleted?'<span class="badge br">Depleted</span>':low?'<span class="badge ba">Low</span>':'<span class="badge bg">In stock</span>';
       consumedCell=pbUsed>0?pbUsed+' pack'+(pbUsed!==1?'s':''):'—';
       availCell=`<span style="font-weight:600;color:${depleted?'var(--red-m)':low?'var(--amb-m)':'var(--grn)'}">${pbAvail} pack${pbAvail!==1?'s':''}</span>`;
@@ -3707,7 +3717,7 @@ function renderInvSummary(q){
       <td><span style="font-family:'DM Mono',monospace;font-size:11.5px;font-weight:700;color:${r.isRemainder?'#7F77DD':'#1a5fcb'};background:${r.isRemainder?'rgba(127,119,221,.12)':'var(--grn-l)'};padding:3px 7px;border-radius:5px">${r.altId||'—'}</span>${r.isRemainder?'<span class="badge-rlt" style="margin-left:5px;vertical-align:middle"><i class="ti ti-refresh-dot" style="font-size:9px"></i> RLT</span>':''}</td>
       <td>${fmtDate(r.date)}</td>
       <td><span class="badge ${r.isPackingBag?'ba':'bt'}">${matName(r.category)}</span>${r.isRemainder?`<div style="font-size:10px;color:var(--txt3);margin-top:2px">from ${r.sourceAltId||'—'}</div>`:''}</td>
-      <td style="font-weight:600">${r.isPackingBag?(r.totalPacks||r.bundles||0)+' packs':r.qtyKg.toFixed(2)+' kg'}</td>
+      <td style="font-weight:600">${r.isPackingBag?(r.packs||r.bundles||r.totalPacks||0)+' packs':r.qtyKg.toFixed(2)+' kg'}</td>
       <td>${consumedCell}</td>
       <td>${availCell}</td>
       <td style="min-width:100px">
@@ -3736,7 +3746,7 @@ function loadCustomExpCats(){
 function saveCustomExpCats(arr){
   try{ localStorage.setItem('xcel_exp_cats', JSON.stringify(arr)); }catch(e){}
 }
-let CUSTOM_EXP_CATS = loadCustomExpCats();
+// CUSTOM_EXP_CATS declared at top of script
 
 function populateExpCats(selectVal){
   const sel = document.getElementById('e-cat');
@@ -4131,8 +4141,8 @@ function renderDash(){
   const activeSachetLots=sachetRM.filter(r=>rawmatAvailable(r)>0).length;
 
   // Packing bag metrics (bundle-based)
-  const totPbIn=packingRM.reduce((a,r)=>a+(r.bundles||0),0);
-  const pbConsumed=r=>DB.production.filter(p=>p.matPackingLotId===r.id).reduce((a,p)=>a+(p.matPackingBundles||0),0);
+  const totPbIn=packingRM.reduce((a,r)=>a+(r.packs||r.bundles||0),0);
+  const pbConsumed=r=>DB.production.filter(p=>String(p.matPackingLotId)===String(r.id)).reduce((a,p)=>a+(p.matPackingBundles||0),0);
   const totPbUsed=packingRM.reduce((a,r)=>a+pbConsumed(r),0);
   const totPbLeft=Math.max(0,totPbIn-totPbUsed);
   const activePbLots=packingRM.filter(r=>rawmatAvailBundles(r)>0).length;
@@ -4166,7 +4176,7 @@ function renderDash(){
   /* ── Chart: top 6 lots bar (received vs consumed — KG for rolls, packs for packing) ── */
   const topLots=dashRM.slice().reverse().slice(0,6);
   const topLabels=topLots.map(r=>(r.altId||('RM-'+String(r.id).padStart(4,'0')))+(r.isPackingBag?' (pks)':''));
-  const topReceived=topLots.map(r=>r.isPackingBag?(r.bundles||0):r.qtyKg);
+  const topReceived=topLots.map(r=>r.isPackingBag?(r.packs||r.bundles||0):r.qtyKg);
   const topConsumed=topLots.map(r=>r.isPackingBag?pbConsumed(r):rawmatConsumed(r.id));
   if(chMatLots)chMatLots.destroy();
   chMatLots=new Chart(document.getElementById('ch-mat-lots'),{
@@ -4190,7 +4200,7 @@ function renderDash(){
     const n=matName2(r.category);
     if(r.isPackingBag){
       if(!packingGroups[n])packingGroups[n]={in:0,used:0,cost:0};
-      packingGroups[n].in+=(r.bundles||0);
+      packingGroups[n].in+=(r.packs||r.bundles||0);
       packingGroups[n].used+=pbConsumed(r);
       packingGroups[n].cost+=r.amount;
     } else {
@@ -4340,7 +4350,7 @@ function getStoreRadius(){ return GEOCFG.radius||200; }
 /* =============================================
    ATTENDANCE DATA  (stored in DB.attendance)
    ============================================= */
-DB.attendance = DB.attendance || [];
+// DB.attendance initialized in DB object above
 
 /* =============================================
    GEO HELPERS
