@@ -2369,7 +2369,7 @@ function goPage(name,btn){
   document.getElementById('page-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
   const map={mysales:renderMySales,dash:renderDash,asales:()=>renderAS(''),aprod:renderAP,aexp:renderAE,users:renderUsers,
-    prod:()=>{updateProdPanel(); populateReconLotSelect(); renderActiveRemainders(); renderReconHistory();},rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
+    prod:()=>{updateProdPanel(); populateMatLotSelect(); populateReconLotSelect(); renderActiveRemainders(); renderReconHistory();},rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
     sale:()=>{ updateStockHint(); },
     attendance:()=>{updateAttStatusBar();renderAttMy();},
     'att-admin':()=>renderAttAdmin(''),
