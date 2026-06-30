@@ -783,6 +783,15 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                     </div>
                   </div>
                   <div style="font-size:11px;color:var(--grn);margin-top:6px" id="p-mat-sachet-hint">Select a printed rolls lot to see availability</div>
+                  <div class="field" style="margin:.7rem 0 0">
+                    <label>Machine used</label>
+                    <div style="display:flex;gap:6px">
+                      <select id="p-machine" style="flex:1">
+                        <option value="">— Select machine —</option>
+                      </select>
+                      <button class="btn btn-outline btn-sm admin-nav" id="add-machine-btn" style="display:none;flex-shrink:0" onclick="promptAddMachine()" title="Add a new machine"><i class="ti ti-plus"></i></button>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- PACKING BAG material lot -->
@@ -1206,6 +1215,20 @@ table.dt tbody tr:hover td{background:var(--surf2);}
         <div class="card card-sm" style="margin-top:1.1rem">
           <div class="card-title"><i class="ti ti-box-seam"></i> Raw material utilisation breakdown</div>
           <div id="mat-bars"></div>
+        </div>
+
+        <div class="cgrid" style="margin-top:1.1rem">
+          <div class="card card-sm">
+            <div class="card-title"><i class="ti ti-engine"></i> Production by machine</div>
+            <div class="cbox"><canvas id="ch-machine" aria-label="Production by machine chart"></canvas></div>
+          </div>
+          <div class="card card-sm">
+            <div class="card-title"><i class="ti ti-report-analytics"></i> Machine performance</div>
+            <div class="tw"><table class="dt">
+              <thead><tr><th>Machine</th><th>Batches</th><th>Bags produced</th><th>Rolls used (kg)</th></tr></thead>
+              <tbody id="d-machine-tbody"></tbody>
+            </table></div>
+          </div>
         </div>
 
         <div class="cgrid">
@@ -1671,6 +1694,21 @@ table.dt tbody tr:hover td{background:var(--surf2);}
   </div>
 </div>
 
+<div class="mo" id="addmachine-mo">
+  <div class="modal">
+    <div class="modal-hd"><span>Add machine</span><button class="modal-x" onclick="closeAddMachineMo()"><i class="ti ti-x"></i></button></div>
+    <div class="field full" style="margin-bottom:1.2rem">
+      <label>Machine name</label>
+      <input type="text" id="addmachine-input" placeholder="e.g. Machine 2" maxlength="40">
+      <div class="err" id="addmachine-err" style="display:none;margin-top:6px"><i class="ti ti-alert-circle"></i> <span id="addmachine-err-msg">Enter a machine name</span></div>
+    </div>
+    <div style="display:flex;gap:9px">
+      <button class="btn btn-primary btn-full" onclick="confirmAddMachine()"><i class="ti ti-check"></i> Add machine</button>
+      <button class="btn btn-outline btn-full" onclick="closeAddMachineMo()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="mo" id="signout-mo">
   <div class="modal">
     <div class="modal-hd"><span>Confirm sign out</span><button class="modal-x" onclick="closeSignOutMo()"><i class="ti ti-x"></i></button></div>
@@ -1825,7 +1863,7 @@ let spM='CASH';
 let pendingSale=null;
 let recentSalesScope='today';
 let voidTargetId=null;
-let chMatCat=null, chMatLots=null;
+let chMatCat=null, chMatLots=null, chMachine=null;
 let _permsUserId = null;
 const AUTO_SIGNOUT_HOUR = 21; // 9pm, 24h clock
 const TODAY = new Date().toISOString().split('T')[0];
@@ -1841,6 +1879,8 @@ const EXP_CATS_BASE = ['Operator','Fuel','Repair','Driver','Maintenance','Equipm
   'Labor & Staff','Logistics','Regulatory','Admin','Marketing','Security','Miscellaneous'];
 // Custom expense categories (persisted in localStorage, loaded at startup)
 let CUSTOM_EXP_CATS = (function(){ try{ const r=localStorage.getItem('xcel_exp_cats'); return r?JSON.parse(r):[]; }catch(e){ return []; } })();
+// Machines list (admin-managed, persisted in localStorage)
+let MACHINES = (function(){ try{ const r=localStorage.getItem('xcel_machines'); return r?JSON.parse(r):['Machine 1']; }catch(e){ return ['Machine 1']; } })();
 const ALL_PAGES = [
   {key:'sale',   label:'Record sale',          icon:'ti-shopping-cart'},
   {key:'prod',   label:'Log production',       icon:'ti-packages'},
@@ -2049,6 +2089,7 @@ function finaliseLogin(user){
   document.getElementById('user-av').textContent=user.name[0].toUpperCase();
   setDates();
   populateExpCats();
+  populateMachines();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
   resetRollRows();
   applyUserPermissionsToNav(CU);
@@ -2090,6 +2131,8 @@ function applyUserPermissionsToNav(user){
   // Conditional UI elements
   const addCatBtn = document.getElementById('add-cat-btn');
   if(addCatBtn) addCatBtn.style.display = (isAdmin||canDo('add_exp_cat')) ? '' : 'none';
+  const addMachineBtn = document.getElementById('add-machine-btn');
+  if(addMachineBtn) addMachineBtn.style.display = isAdmin ? '' : 'none';
 }
 
 /* =============================================
@@ -2373,7 +2416,7 @@ function goPage(name,btn){
   document.getElementById('page-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
   const map={mysales:renderMySales,dash:renderDash,asales:()=>renderAS(''),aprod:renderAP,aexp:renderAE,users:renderUsers,
-    prod:()=>{updateProdPanel(); populateMatLotSelect(); populateReconLotSelect(); renderActiveRemainders(); renderReconHistory();},rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
+    prod:()=>{updateProdPanel(); populateMatLotSelect(); populateMachines(); populateReconLotSelect(); renderActiveRemainders(); renderReconHistory();},rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
     sale:()=>{ updateStockHint(); },
     attendance:()=>{updateAttStatusBar();renderAttMy();},
     'att-admin':()=>renderAttAdmin(''),
@@ -3395,6 +3438,7 @@ function submitProd(){
   const type=document.getElementById('p-type').value;
   const qty=parseFloat(document.getElementById('p-qty').value);
   const note=document.getElementById('p-note').value;
+  const machine=document.getElementById('p-machine')?document.getElementById('p-machine').value:'';
   if(!date||!batch||!qty){toast('Fill in date and quantity','e');return;}
 
   // Sachet Bags lot
@@ -3438,7 +3482,7 @@ function submitProd(){
     matSachetLotId,matSachetLabel,matSachetQtyUsed,
     matPackingLotId,matPackingLabel,matPackingBundles,
     matLotId,matLotLabel,matQtyUsed,
-    type,qty,note,staff:CU.name,staffId:CU.id});
+    type,qty,note,machine,staff:CU.name,staffId:CU.id});
   // ── Firebase save ──
   if(window.fsReady){
     const prod=DB.production[DB.production.length-1];
@@ -3450,6 +3494,7 @@ function submitProd(){
 }
 function clearProd(){
   ['p-qty','p-note','p-mat-sachet-qty','p-mat-packing-qty'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const machEl=document.getElementById('p-machine'); if(machEl) machEl.value='';
   setDates();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
   populateMatLotSelect();
@@ -3788,6 +3833,40 @@ function confirmAddCat(){
   toast('Category "'+name+'" added','s');
 }
 
+/* ── Machines (admin-managed list, used on Printed Rolls production logging) ── */
+function saveMachines(arr){
+  try{ localStorage.setItem('xcel_machines', JSON.stringify(arr)); }catch(e){}
+}
+function populateMachines(selectVal){
+  const sel = document.getElementById('p-machine');
+  if(!sel) return;
+  const prev = selectVal !== undefined ? selectVal : sel.value;
+  sel.innerHTML = '<option value="">— Select machine —</option>' + MACHINES.map(m=>`<option>${m}</option>`).join('');
+  if(prev && MACHINES.includes(prev)) sel.value = prev;
+}
+function promptAddMachine(){
+  document.getElementById('addmachine-input').value='';
+  document.getElementById('addmachine-err').style.display='none';
+  document.getElementById('addmachine-mo').classList.add('open');
+  setTimeout(()=>document.getElementById('addmachine-input').focus(),50);
+}
+function closeAddMachineMo(){ document.getElementById('addmachine-mo').classList.remove('open'); }
+function confirmAddMachine(){
+  const input = document.getElementById('addmachine-input');
+  const name = input.value.trim();
+  const errEl = document.getElementById('addmachine-err');
+  const errMsg = document.getElementById('addmachine-err-msg');
+  if(!name){ errMsg.textContent='Enter a machine name'; errEl.style.display='flex'; return; }
+  if(MACHINES.some(m=>m.toLowerCase()===name.toLowerCase())){
+    errMsg.textContent='That machine already exists'; errEl.style.display='flex'; return;
+  }
+  MACHINES.push(name);
+  saveMachines(MACHINES);
+  populateMachines(name);
+  closeAddMachineMo();
+  toast('Machine "'+name+'" added','s');
+}
+
 function submitExp(){
   const date=document.getElementById('e-date').value || TODAY;
   const cat=document.getElementById('e-cat').value;
@@ -4035,7 +4114,7 @@ function renderAP(){
     <td>${(p.matPackingBundles||0)>0?p.matPackingBundles+' pks':'—'}</td>
     <td>${p.type}</td><td style="font-weight:600">${p.qty.toLocaleString()}</td>
     <td style="font-weight:600">${totalMatCost>0?'₦'+totalMatCost.toLocaleString(undefined,{maximumFractionDigits:2}):'—'}</td>
-    <td>${p.staff}</td>
+    <td>${p.staff}${p.machine?`<div style="font-size:10px;color:var(--txt3);margin-top:2px"><i class="ti ti-engine" style="font-size:10px"></i> ${p.machine}</div>`:''}</td>
     <td style="color:var(--txt3);font-size:12px">${p.note||'—'}</td>
     <td><button class="btn btn-danger btn-sm" onclick="promptDel('production',${p.id})"><i class="ti ti-trash"></i></button></td>
   </tr>`;}).join('');
@@ -4253,6 +4332,45 @@ function renderDash(){
     })
   ];
   document.getElementById('mat-bars').innerHTML=allMatBars.length?allMatBars.join(''):'<p style="font-size:13px;color:var(--txt3)">No raw material data for this period.</p>';
+
+  /* ── Production by machine ── */
+  const machGroups={};
+  dashProd.forEach(p=>{
+    const m=p.machine||'Unassigned';
+    if(!machGroups[m]) machGroups[m]={batches:0,bags:0,kg:0};
+    machGroups[m].batches++;
+    machGroups[m].bags+=p.qty||0;
+    machGroups[m].kg+=p.matSachetQtyUsed||p.matQtyUsed||0;
+  });
+  const machEntries=Object.entries(machGroups).sort((a,b)=>b[1].bags-a[1].bags);
+  const machLabels=machEntries.map(([k])=>k);
+  const machBags=machEntries.map(([,v])=>v.bags);
+  const machColors=['#1a5fcb','#0a8a6a','#c08a18','#7F77DD','#c03838','#2d58c2','#d4a030'];
+  if(chMachine) chMachine.destroy();
+  const machCanvas=document.getElementById('ch-machine');
+  if(machCanvas){
+    chMachine=new Chart(machCanvas,{
+      type:'bar',
+      data:{
+        labels:machLabels.length?machLabels:['No data'],
+        datasets:[{label:'Bags produced',data:machLabels.length?machBags:[0],backgroundColor:machLabels.length?machLabels.map((_,i)=>machColors[i%machColors.length]):['#dce5f0'],borderRadius:4}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10,family:'DM Mono'},color:'#7a94b0'},grid:{display:false}},y:{ticks:{font:{size:11},color:'#7a94b0'},grid:{color:'rgba(220,229,240,.6)'},beginAtZero:true}}}
+    });
+  }
+  const machTb=document.getElementById('d-machine-tbody');
+  if(machTb){
+    if(!machEntries.length){
+      machTb.innerHTML='<tr><td colspan="4"><div class="empty"><i class="ti ti-engine"></i><p>No production logged for this period</p></div></td></tr>';
+    } else {
+      machTb.innerHTML=machEntries.map(([k,v])=>`<tr>
+        <td style="font-weight:600">${k}</td>
+        <td style="font-family:'DM Mono',monospace">${v.batches}</td>
+        <td style="font-family:'DM Mono',monospace;font-weight:600">${v.bags.toLocaleString()}</td>
+        <td style="font-family:'DM Mono',monospace">${v.kg.toFixed(2)}</td>
+      </tr>`).join('');
+    }
+  }
 
   /* ── Sales by payment ── */
   const cash=activeSales.filter(s=>s.method==='CASH').reduce((a,s)=>a+s.amount,0);
