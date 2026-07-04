@@ -2223,12 +2223,13 @@ function finaliseLogin(user){
   updateRMPanel();renderRawMat('');renderInvSummary('');updateRmAltIdPreview();
   updateStockHint();
 
-  // ── Load all data from Firebase ──
-  loadFromFirebase();
-
-  // ---- ATTENDANCE: log sign-in ----
-  attSignIn(user);
-  startAttClock();
+  // ── Load all data from Firebase, then log attendance sign-in.
+  // Waiting avoids creating a duplicate sign-in record if this user already
+  // has an open attendance record from another device/session today. ──
+  loadFromFirebase().finally(()=>{
+    attSignIn(user);
+    startAttClock();
+  });
 }
 
 function applyUserPermissionsToNav(user){
@@ -2267,7 +2268,7 @@ async function loadFromFirebase(){
   }
   toast('Syncing data…','');
   try{
-    const cols=['sales','production','expenses','rawmats','prodcalc','users'];
+    const cols=['sales','production','expenses','rawmats','prodcalc','users','attendance'];
     for(const col of cols){
       const snap=await fsGetDocs(fsCol(col));
       snap.forEach(d=>{
@@ -2297,6 +2298,13 @@ async function loadFromFirebase(){
     updateStockHint();populateBatchSelect();populateMatLotSelect();
     populateUprBatchSelect();onUprBatchChange();renderUprHistory();
     renderUsers();
+    if(CU){
+      updateAttStatusBar();renderAttMy();
+      if(CU.role!=='staff'||canAccess('att-admin')){
+        const q=document.querySelector('#page-att-admin input[type="text"]');
+        renderAttAdmin(q?q.value:'');
+      }
+    }
     if(CU&&(CU.role!=='staff'||canAccess('dash'))) renderDash();
     toast('Data synced ✓','s');
   } catch(e){
@@ -2330,6 +2338,9 @@ function checkAutoSignOut(){
       r.signOut = cutoff.toISOString();
       r.autoSignOut = true;
       changed = true;
+      if(window.fsReady && r._fbId){
+        fsUpdateDoc(fsDoc('attendance', r._fbId), {signOut:r.signOut, autoSignOut:true}).catch(e=>console.warn('FS attendance auto-out update:',e));
+      }
       if(CU && r.userId===CU.id) closedCurrentUser = true;
     }
   });
@@ -2360,7 +2371,7 @@ function attSignIn(user){
   // Don't double-create if somehow already open
   const existing = DB.attendance.find(r=>r.userId===user.id && r.date===todayKey && !r.signOut);
   if(!existing){
-    DB.attendance.push({
+    const rec = {
       id: DB.nid(),
       userId: user.id,
       name: user.name,
@@ -2368,7 +2379,14 @@ function attSignIn(user){
       date: todayKey,
       signIn: now.toISOString(),
       signOut: null
-    });
+    };
+    DB.attendance.push(rec);
+    // ── Firebase write — without this, sign-in records only exist in this
+    // browser's memory and disappear on reload or on any other device ──
+    if(window.fsReady){
+      const clean=Object.fromEntries(Object.entries(rec).filter(([,v])=>v!==undefined));
+      fsAddDoc(fsCol('attendance'), clean).then(ref=>{ rec._fbId=ref.id; }).catch(e=>console.warn('FS attendance write:',e));
+    }
   }
   updateAttStatusBar();
   renderAttMy();
@@ -2398,6 +2416,9 @@ function confirmSignOut(){
   const rec = DB.attendance.find(r=>r.userId===CU.id && r.date===todayKey && !r.signOut);
   if(rec){
     rec.signOut = new Date().toISOString();
+    if(window.fsReady && rec._fbId){
+      fsUpdateDoc(fsDoc('attendance', rec._fbId), {signOut:rec.signOut}).catch(e=>console.warn('FS attendance update:',e));
+    }
   }
   updateAttStatusBar();
   renderAttMy();
@@ -5588,8 +5609,8 @@ async function executeReset(){
     return chk && chk.checked;
   });
 
-  // Firebase collection names (attendance is local-only, no Firebase collection)
-  const fbCollections = {sales:'sales', production:'production', rawmats:'rawmats', expenses:'expenses'};
+  // Firebase collection names
+  const fbCollections = {sales:'sales', production:'production', rawmats:'rawmats', expenses:'expenses', attendance:'attendance'};
 
   for(const key of selected){
     // Delete from Firebase
