@@ -566,8 +566,8 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <!-- DATE BUTTON -->
                 <div class="field full">
                   <label>Date</label>
-                  <input type="date" id="s-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onDateChange()">
-                  <button class="date-btn" id="s-date-btn" onclick="openDatePicker()">
+                  <input type="date" id="s-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="onDateChange()" onblur="hideDateInput('s-date')">
+                  <button class="date-btn" id="s-date-btn" onclick="showDateInput('s-date')">
                     <i class="ti ti-calendar"></i>
                     <span class="db-label" id="s-date-label">Today</span>
                     <span class="db-change">tap to change</span>
@@ -785,8 +785,8 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="fg">
                 <div class="field">
                   <label>Date</label>
-                  <input type="date" id="p-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('p-date','p-date-label', regenBatch)">
-                  <button class="date-btn" id="p-date-btn" type="button" onclick="openDatePickerG('p-date')">
+                  <input type="date" id="p-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('p-date','p-date-label', regenBatch)" onblur="hideDateInput('p-date')">
+                  <button class="date-btn" id="p-date-btn" type="button" onclick="showDateInput('p-date')">
                     <i class="ti ti-calendar"></i>
                     <span class="db-label" id="p-date-label">Today</span>
                     <span class="db-change">tap to change</span>
@@ -846,7 +846,6 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <div class="field"><label>Product type</label>
                   <select id="p-type"><option>Pure water 50CL</option><option>Dispenser water</option><option>Bottle water 50CL</option></select>
                 </div>
-                <div class="field"><label>Qty produced (bags)</label><input type="number" id="p-qty" placeholder="e.g. 400" min="1" oninput="updateBatchMetricsPreview()"></div>
                 <div class="field full"><label>Notes</label><input type="text" id="p-note" placeholder="Operator notes, machine status…"></div>
               </div>
               <div class="f-actions">
@@ -865,88 +864,78 @@ table.dt tbody tr:hover td{background:var(--surf2);}
 
         </div>
 
-        <!-- ROLL LEFTOVER RECONCILIATION -->
+        <!-- UPDATE PRODUCTION RECORD -->
         <div style="margin-top:1.75rem">
           <div class="ph" style="margin-bottom:1rem">
             <div>
-              <div class="ph-title" style="font-size:16px"><i class="ti ti-refresh-dot" style="color:var(--grn-m)"></i> End-of-day roll reconciliation</div>
-              <div class="ph-sub">When a roll is not fully used, weigh the leftover and record it here. A remainder lot (RLT/…) will be created and <strong style="color:var(--grn)">must be used first</strong> before any new roll can be picked.</div>
+              <div class="ph-title" style="font-size:16px"><i class="ti ti-refresh-dot" style="color:var(--grn-m)"></i> Update Production Record</div>
+              <div class="ph-sub">A batch stays <strong style="color:var(--amb)">Production In Progress</strong> — and its machine stays locked — until you confirm the machine and final Qty Produced here.</div>
             </div>
           </div>
 
-          <!-- Active remainder lots alert -->
-          <div id="recon-active-alert" style="display:none;background:linear-gradient(135deg,rgba(255,180,40,.12),rgba(255,140,20,.08));border:1.5px solid var(--amb-m);border-radius:var(--r-lg);padding:1rem 1.2rem;margin-bottom:1.1rem">
-            <div style="font-size:11px;font-weight:700;color:var(--amb);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px"><i class="ti ti-alert-triangle"></i> Active remainder lots — must be used first</div>
-            <div id="recon-active-list" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px"></div>
+          <!-- Locked machines alert -->
+          <div id="upr-locked-alert" style="display:none;background:linear-gradient(135deg,rgba(255,180,40,.12),rgba(255,140,20,.08));border:1.5px solid var(--amb-m);border-radius:var(--r-lg);padding:1rem 1.2rem;margin-bottom:1.1rem">
+            <div style="font-size:11px;font-weight:700;color:var(--amb);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px"><i class="ti ti-lock"></i> Machines locked — leftovers pending</div>
+            <div id="upr-locked-list" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px"></div>
           </div>
 
           <div class="pos">
-            <!-- RECONCILIATION FORM -->
+            <!-- UPDATE PRODUCTION RECORD FORM -->
             <div class="pos-card">
               <div class="pos-head">
-                <div class="pos-head-ico" style="background:linear-gradient(135deg,#1a5f4a,#1d9e75)"><i class="ti ti-scale"></i></div>
-                <div><h2>Record leftover roll</h2><p>Weigh the partial roll and log the remaining KG</p></div>
+                <div class="pos-head-ico" style="background:linear-gradient(135deg,#1a5f4a,#1d9e75)"><i class="ti ti-clipboard-check"></i></div>
+                <div><h2>Update production record</h2><p>Select an in-progress batch and record the outcome</p></div>
               </div>
               <div class="pos-body">
-                <div class="ok" id="recon-ok"><i class="ti ti-circle-check"></i> Remainder lot created!</div>
+                <div class="ok" id="upr-ok"><i class="ti ti-circle-check"></i> Production record updated!</div>
                 <div class="fg">
-                  <div class="field">
-                    <label>Date</label>
-                    <input type="date" id="recon-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('recon-date','recon-date-label')">
-                    <button class="date-btn" id="recon-date-btn" type="button" onclick="openDatePickerG('recon-date')">
-                      <i class="ti ti-calendar"></i>
-                      <span class="db-label" id="recon-date-label">Today</span>
-                      <span class="db-change">tap to change</span>
-                    </button>
-                  </div>
                   <div class="field full">
-                    <label>Original lot being reconciled</label>
-                    <select id="recon-lot" onchange="onReconLotChange()">
-                      <option value="">— Select the roll lot used today —</option>
+                    <label>Batch to update</label>
+                    <select id="upr-batch" onchange="onUprBatchChange()">
+                      <option value="">— Select a batch in progress —</option>
                     </select>
-                    <div style="font-size:11px;color:var(--txt3);margin-top:5px" id="recon-lot-hint"></div>
+                    <div style="font-size:11px;color:var(--txt3);margin-top:5px" id="upr-batch-hint"></div>
                   </div>
                   <div class="field">
-                    <label>Leftover KG (physically weighed)</label>
-                    <input type="number" id="recon-leftover-kg" min="0.01" step="0.01" placeholder="e.g. 3.75" oninput="onReconKgInput()">
-                    <div style="font-size:11px;margin-top:5px" id="recon-kg-hint"></div>
+                    <label>Original lot <span style="font-weight:400;color:var(--txt3)">(auto)</span></label>
+                    <input type="text" id="upr-lot-preview" readonly style="font-family:'DM Mono',monospace;font-weight:700;color:#1a5fcb;background:var(--grn-xl);border-color:var(--grn-m)">
                   </div>
                   <div class="field">
-                    <label>Remainder ALT ID <span style="font-weight:400;color:var(--txt3)">(auto)</span></label>
-                    <input type="text" id="recon-altid-preview" readonly style="font-family:'DM Mono',monospace;font-weight:700;color:#1a5fcb;background:var(--grn-xl);border-color:var(--grn-m)">
+                    <label>Machine used</label>
+                    <select id="upr-machine" onchange="onUprMachineChange()">
+                      <option value="">— Select machine —</option>
+                    </select>
+                    <div style="font-size:11px;margin-top:5px" id="upr-machine-hint"></div>
                   </div>
                   <div class="field full">
-                    <label>Note (optional)</label>
-                    <input type="text" id="recon-note" placeholder="e.g. Leftover from morning run — machine stopped at 4pm">
+                    <label>Status</label>
+                    <select id="upr-status" onchange="onUprStatusChange()">
+                      <option value="">— Select status —</option>
+                      <option value="complete">Production Complete</option>
+                      <option value="in_progress">Leftovers in Machine</option>
+                    </select>
                   </div>
-                </div>
-
-                <!-- Summary box -->
-                <div id="recon-summary" style="display:none;background:var(--surf2);border:1.5px solid var(--brd);border-radius:var(--r);padding:.85rem 1rem;margin-bottom:.9rem">
-                  <div style="font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px"><i class="ti ti-list-check"></i> What will happen</div>
-                  <div style="font-size:12.5px;display:flex;flex-direction:column;gap:6px">
-                    <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Original lot</span><strong id="rs-orig-id">—</strong></div>
-                    <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Available in lot</span><strong id="rs-avail">—</strong></div>
-                    <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Leftover being saved</span><strong id="rs-leftover" style="color:var(--grn)">—</strong></div>
-                    <div style="display:flex;justify-content:space-between;border-top:1px solid var(--brd);padding-top:6px"><span style="color:var(--txt2)">Original lot after reconcile</span><strong id="rs-remainder-orig" style="color:var(--red-m)">—</strong></div>
-                    <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">New remainder lot (RLT/…)</span><strong id="rs-new-lot" style="color:#1a5fcb">—</strong></div>
+                  <div class="field full" id="upr-qty-row" style="display:none">
+                    <label id="upr-qty-lbl">Qty Produced (bags)</label>
+                    <input type="number" id="upr-qty" min="1" step="1" placeholder="e.g. 400" oninput="checkUprReady()">
                   </div>
+                  <div class="field full"><label>Note (optional)</label><input type="text" id="upr-note" placeholder="e.g. Machine stopped at 4pm — resumes tomorrow"></div>
                 </div>
 
                 <div class="f-actions">
-                  <button class="btn btn-primary" onclick="submitReconciliation()" id="recon-submit-btn" disabled style="opacity:.45;cursor:not-allowed">
-                    <i class="ti ti-refresh-dot"></i> Create remainder lot
+                  <button class="btn btn-primary" onclick="submitProdUpdate()" id="upr-submit-btn" disabled style="opacity:.45;cursor:not-allowed">
+                    <i class="ti ti-check"></i> Save update
                   </button>
-                  <button class="btn btn-outline" onclick="clearRecon()"><i class="ti ti-refresh"></i> Clear</button>
+                  <button class="btn btn-outline" onclick="clearUpr()"><i class="ti ti-refresh"></i> Clear</button>
                 </div>
               </div>
             </div>
 
-            <!-- RECONCILIATION HISTORY -->
+            <!-- BATCHES IN PROGRESS -->
             <div class="receipt" style="min-width:0">
-              <div class="r-head"><h3><i class="ti ti-history" style="color:#1a5fcb"></i> Remainder lots</h3></div>
-              <div class="r-body" id="recon-history-body">
-                <div class="empty" style="padding:1.5rem 0"><i class="ti ti-scale"></i><p>No remainder lots recorded yet</p></div>
+              <div class="r-head"><h3><i class="ti ti-history" style="color:#1a5fcb"></i> Batches in progress</h3></div>
+              <div class="r-body" id="upr-history-body">
+                <div class="empty" style="padding:1.5rem 0"><i class="ti ti-packages"></i><p>No batches in progress</p></div>
               </div>
             </div>
           </div>
@@ -963,8 +952,8 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           <div class="fg">
             <div class="field">
               <label>Date</label>
-              <input type="date" id="pc-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('pc-date','pc-date-label')">
-              <button class="date-btn" id="pc-date-btn" type="button" onclick="openDatePickerG('pc-date')">
+              <input type="date" id="pc-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('pc-date','pc-date-label')" onblur="hideDateInput('pc-date')">
+              <button class="date-btn" id="pc-date-btn" type="button" onclick="showDateInput('pc-date')">
                 <i class="ti ti-calendar"></i>
                 <span class="db-label" id="pc-date-label">Today</span>
                 <span class="db-change">tap to change</span>
@@ -1024,8 +1013,8 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="fg">
                 <div class="field">
                   <label>Date</label>
-                  <input type="date" id="rm-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('rm-date','rm-date-label');updateRmAltIdPreview()">
-                  <button class="date-btn" id="rm-date-btn" type="button" onclick="openDatePickerG('rm-date')">
+                  <input type="date" id="rm-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('rm-date','rm-date-label');updateRmAltIdPreview()" onblur="hideDateInput('rm-date')">
+                  <button class="date-btn" id="rm-date-btn" type="button" onclick="showDateInput('rm-date')">
                     <i class="ti ti-calendar"></i>
                     <span class="db-label" id="rm-date-label">Today</span>
                     <span class="db-change">tap to change</span>
@@ -1163,8 +1152,8 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="fg">
                 <div class="field">
                   <label>Date</label>
-                  <input type="date" id="e-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('e-date','e-date-label')">
-                  <button class="date-btn" id="e-date-btn" type="button" onclick="openDatePickerG('e-date')">
+                  <input type="date" id="e-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('e-date','e-date-label')" onblur="hideDateInput('e-date')">
+                  <button class="date-btn" id="e-date-btn" type="button" onclick="showDateInput('e-date')">
                     <i class="ti ti-calendar"></i>
                     <span class="db-label" id="e-date-label">Today</span>
                     <span class="db-change">tap to change</span>
@@ -2309,6 +2298,7 @@ async function loadFromFirebase(){
     updateExpPanel();updateProdPanel();renderRecentSales();
     updateRMPanel();renderRawMat('');renderInvSummary('');
     updateStockHint();populateBatchSelect();populateMatLotSelect();
+    populateMachines();populateUprBatchSelect();onUprBatchChange();renderUprHistory();
     renderUsers();
     if(CU&&(CU.role!=='staff'||canAccess('dash'))) renderDash();
     toast('Data synced ✓','s');
@@ -2553,7 +2543,7 @@ function goPage(name,btn){
   document.getElementById('page-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
   const map={mysales:renderMySales,dash:renderDash,asales:()=>renderAS(''),aprod:renderAP,aexp:renderAE,users:renderUsers,
-    prod:()=>{updateProdPanel(); populateMatLotSelect(); populateMachines(); populateReconLotSelect(); renderActiveRemainders(); renderReconHistory();},rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
+    prod:()=>{updateProdPanel(); populateMatLotSelect(); populateMachines(); populateUprBatchSelect(); onUprBatchChange(); renderUprHistory();},rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
     prodcalc:()=>{ renderPc(); },
     sale:()=>{ updateStockHint(); if(sType==='supply' && spStage==='return') populateSpTripSelect(); },
     attendance:()=>{updateAttStatusBar();renderAttMy();},
@@ -2652,24 +2642,29 @@ function setDRPreset(key, days){
   if(DR_CFG[key]) DR_CFG[key].render();
 }
 
-function openDatePickerG(inputId){
+/* DATE FIELDS — show a normal, typeable date input instead of an invisible
+   full-screen overlay (the old overlay approach could get stuck open after
+   repeated use and silently block clicks across the whole app). */
+function showDateInput(inputId){
   const inp = document.getElementById(inputId);
-  inp.style.position = 'fixed';
-  inp.style.opacity = '0';
-  inp.style.top = '0';
-  inp.style.left = '0';
-  inp.style.width = '100vw';
-  inp.style.height = '100vh';
-  inp.style.zIndex = '9999';
-  inp.style.pointerEvents = 'all';
-  try{ inp.showPicker ? inp.showPicker() : inp.click(); }catch(e){ inp.click(); }
-  inp.addEventListener('blur', ()=>{ inp.style.pointerEvents='none'; inp.style.opacity='0'; inp.style.position='absolute'; inp.style.width='1px'; inp.style.height='1px'; }, {once:true});
+  if(!inp) return;
+  const btn = document.getElementById(inputId+'-btn');
+  if(btn) btn.style.display='none';
+  inp.style.cssText='';
+  inp.focus();
+  try{ if(inp.showPicker) inp.showPicker(); }catch(e){}
+}
+function hideDateInput(inputId){
+  const inp = document.getElementById(inputId);
+  const btn = document.getElementById(inputId+'-btn');
+  if(inp) inp.style.cssText='position:absolute;opacity:0;pointer-events:none;width:1px;height:1px';
+  if(btn) btn.style.display='';
 }
 function dateChangeG(inputId, labelId, cb){
   const inp = document.getElementById(inputId);
   const lbl = document.getElementById(labelId);
   const val = inp.value;
-  inp.style.pointerEvents='none'; inp.style.opacity='0'; inp.style.position='absolute'; inp.style.width='1px'; inp.style.height='1px';
+  hideDateInput(inputId);
   if(!val || val===TODAY){ lbl.textContent='Today'; }
   else{
     const [y,m,d]=val.split('-');
@@ -2677,20 +2672,6 @@ function dateChangeG(inputId, labelId, cb){
     lbl.textContent=parseInt(d)+' '+months[parseInt(m)-1]+' '+y.slice(2);
   }
   if(cb) cb(val);
-}
-
-function openDatePicker(){
-  const inp = document.getElementById('s-date');
-  inp.style.position = 'fixed';
-  inp.style.opacity = '0';
-  inp.style.top = '0';
-  inp.style.left = '0';
-  inp.style.width = '100vw';
-  inp.style.height = '100vh';
-  inp.style.zIndex = '9999';
-  inp.style.pointerEvents = 'all';
-  try{ inp.showPicker ? inp.showPicker() : inp.click(); }catch(e){ inp.click(); }
-  inp.addEventListener('blur', ()=>{ inp.style.pointerEvents='none'; inp.style.opacity='0'; inp.style.position='absolute'; inp.style.width='1px'; inp.style.height='1px'; }, {once:true});
 }
 
 function selSaleType(t, el){
@@ -2767,9 +2748,7 @@ function onDateChange(){
   const inp = document.getElementById('s-date');
   const val = inp.value;
   const lbl = document.getElementById('s-date-label');
-  // Always dismiss the full-screen invisible picker overlay first, even if no date was chosen —
-  // otherwise it stays on top of the whole app and blocks every click across every tab.
-  inp.style.pointerEvents='none'; inp.style.opacity='0'; inp.style.position='absolute'; inp.style.width='1px'; inp.style.height='1px';
+  hideDateInput('s-date');
   if(!val || val === TODAY){ lbl.textContent = 'Today'; }
   else {
     const [y,m,d] = val.split('-');
@@ -3788,10 +3767,14 @@ function submitProd(){
   const date=document.getElementById('p-date').value || TODAY;
   const batch=document.getElementById('p-batch').value.trim();
   const type=document.getElementById('p-type').value;
-  const qty=parseFloat(document.getElementById('p-qty').value);
   const note=document.getElementById('p-note').value;
   const machine=document.getElementById('p-machine')?document.getElementById('p-machine').value:'';
-  if(!date||!batch||!qty){toast('Fill in date and quantity','e');return;}
+  if(!date||!batch){toast('Fill in the date','e');return;}
+  if(!machine){toast('Select the machine used','e');return;}
+  if(lockedMachines().includes(machine)){
+    toast('Machine "'+machine+'" is locked — finish updating its current batch before starting a new one','e');
+    return;
+  }
 
   // Sachet Bags lot
   const sachetLotRaw=document.getElementById('p-mat-sachet').value;
@@ -3830,22 +3813,25 @@ function submitProd(){
   const matLotLabel=matSachetLabel!=='—'?matSachetLabel:matPackingLabel;
   const matQtyUsed=matSachetQtyUsed;
 
+  // Qty Produced & final Machine confirmation happen later in Update Production Record —
+  // the batch stays "Production In Progress" (and its machine locked) until then.
   DB.production.push({id:DB.nid(),date,batch,
     matSachetLotId,matSachetLabel,matSachetQtyUsed,
     matPackingLotId,matPackingLabel,matPackingBundles,
     matLotId,matLotLabel,matQtyUsed,
-    type,qty,note,machine,staff:CU.name,staffId:CU.id});
+    type,qty:0,note,machine,status:'in_progress',staff:CU.name,staffId:CU.id});
   // ── Firebase save ──
   if(window.fsReady){
     const prod=DB.production[DB.production.length-1];
     const clean=Object.fromEntries(Object.entries(prod).filter(([,v])=>v!==undefined));
     fsAddDoc(fsCol('production'), clean).then(ref=>{ prod._fbId=ref.id; }).catch(e=>console.warn('FS prod write:',e));
   }
-  showOk('prod-ok');clearProd();toast('Batch logged! Code: '+batch,'s');
+  showOk('prod-ok');clearProd();toast('Batch logged! Code: '+batch+' — update it once production wraps up','s');
   updateProdPanel();populateBatchSelect();populateMatLotSelect();updateRMPanel();renderRawMat('');
+  populateMachines();populateUprBatchSelect();onUprBatchChange();renderUprHistory();
 }
 function clearProd(){
-  ['p-qty','p-note','p-mat-sachet-qty','p-mat-packing-qty'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['p-note','p-mat-sachet-qty','p-mat-packing-qty'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const machEl=document.getElementById('p-machine'); if(machEl) machEl.value='';
   setDates();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
@@ -4193,8 +4179,155 @@ function populateMachines(selectVal){
   const sel = document.getElementById('p-machine');
   if(!sel) return;
   const prev = selectVal !== undefined ? selectVal : sel.value;
-  sel.innerHTML = '<option value="">— Select machine —</option>' + MACHINES.map(m=>`<option>${m}</option>`).join('');
-  if(prev && MACHINES.includes(prev)) sel.value = prev;
+  const locked = lockedMachines();
+  sel.innerHTML = '<option value="">— Select machine —</option>' + MACHINES.map(m=>{
+    const isLocked = locked.includes(m);
+    return `<option value="${m}" ${isLocked?'disabled':''}>${m}${isLocked?' — locked (leftover pending)':''}</option>`;
+  }).join('');
+  if(prev && MACHINES.includes(prev) && !locked.includes(prev)) sel.value = prev;
+}
+
+/* =============================================
+   UPDATE PRODUCTION RECORD — machine locking + batch completion
+   ============================================= */
+function lockedMachines(excludeId){
+  return DB.production
+    .filter(p => p.status==='in_progress' && p.machine && p.id!==excludeId)
+    .map(p => p.machine);
+}
+function inProgressBatches(){
+  return DB.production.filter(p => p.status==='in_progress').slice().reverse();
+}
+function populateUprBatchSelect(){
+  const sel=document.getElementById('upr-batch'); if(!sel) return;
+  const cur=sel.value;
+  const batches=inProgressBatches();
+  if(!batches.length){
+    sel.innerHTML='<option value="">— No batches in progress —</option>';
+  } else {
+    sel.innerHTML='<option value="">— Select a batch in progress —</option>'+batches.map(p=>
+      `<option value="${p.id}">${p.batch} — ${fmtDate(p.date)} · ${p.type}${p.machine?' · '+p.machine:''}</option>`
+    ).join('');
+  }
+  if(batches.some(p=>String(p.id)===cur)) sel.value=cur;
+}
+function populateUprMachineSelect(excludeId, selectVal){
+  const sel=document.getElementById('upr-machine'); if(!sel) return;
+  const locked=lockedMachines(excludeId);
+  sel.innerHTML='<option value="">— Select machine —</option>'+MACHINES.map(m=>{
+    const isLocked=locked.includes(m);
+    return `<option value="${m}" ${isLocked?'disabled':''}>${m}${isLocked?' — locked by another batch':''}</option>`;
+  }).join('');
+  if(selectVal && MACHINES.includes(selectVal) && !locked.includes(selectVal)) sel.value=selectVal;
+}
+function onUprBatchChange(){
+  const id=document.getElementById('upr-batch').value;
+  const p=DB.production.find(x=>String(x.id)===id);
+  const lotPrev=document.getElementById('upr-lot-preview');
+  const hint=document.getElementById('upr-batch-hint');
+  const statusSel=document.getElementById('upr-status');
+  const qtyRow=document.getElementById('upr-qty-row');
+  const qtyInput=document.getElementById('upr-qty');
+  if(!p){
+    if(lotPrev) lotPrev.value='';
+    if(hint) hint.textContent='';
+    populateUprMachineSelect();
+    if(statusSel) statusSel.value='';
+    if(qtyRow) qtyRow.style.display='none';
+    if(qtyInput) qtyInput.value='';
+    checkUprReady();
+    return;
+  }
+  // Automatically pull the original lot from this batch
+  const lotLabel = (p.matSachetLabel && p.matSachetLabel!=='—') ? p.matSachetLabel : (p.matPackingLabel && p.matPackingLabel!=='—' ? p.matPackingLabel : '—');
+  if(lotPrev) lotPrev.value=lotLabel;
+  if(hint) hint.textContent='Logged '+fmtDate(p.date)+' · '+p.type+(p.qty?' · '+p.qty+' bags so far':'');
+  populateUprMachineSelect(p.id, p.machine||'');
+  if(statusSel) statusSel.value='';
+  if(qtyRow) qtyRow.style.display='none';
+  if(qtyInput) qtyInput.value='';
+  checkUprReady();
+}
+function onUprMachineChange(){ checkUprReady(); }
+function onUprStatusChange(){
+  const status=document.getElementById('upr-status').value;
+  const row=document.getElementById('upr-qty-row');
+  const lbl=document.getElementById('upr-qty-lbl');
+  if(status==='complete'){ row.style.display='flex'; lbl.textContent='Qty Produced (bags)'; }
+  else if(status==='in_progress'){ row.style.display='flex'; lbl.textContent='Qty Produced So Far (bags)'; }
+  else { row.style.display='none'; }
+  checkUprReady();
+}
+function checkUprReady(){
+  const id=document.getElementById('upr-batch')?.value;
+  const machine=document.getElementById('upr-machine')?.value;
+  const status=document.getElementById('upr-status')?.value;
+  const qty=document.getElementById('upr-qty')?.value;
+  const submitBtn=document.getElementById('upr-submit-btn');
+  if(!submitBtn) return;
+  const ready = !!(id && machine && status && qty && parseFloat(qty)>0);
+  submitBtn.disabled=!ready;
+  submitBtn.style.opacity = ready?'1':'.45';
+  submitBtn.style.cursor = ready?'pointer':'not-allowed';
+}
+function submitProdUpdate(){
+  const id=document.getElementById('upr-batch').value;
+  const p=DB.production.find(x=>String(x.id)===id);
+  if(!p){toast('Select a batch to update','e');return;}
+  const machine=document.getElementById('upr-machine').value;
+  if(!machine){toast('Select the machine used','e');return;}
+  if(lockedMachines(p.id).includes(machine)){toast('Machine "'+machine+'" is locked by another in-progress batch','e');return;}
+  const status=document.getElementById('upr-status').value;
+  if(status!=='complete' && status!=='in_progress'){toast('Select a status','e');return;}
+  const qty=parseFloat(document.getElementById('upr-qty').value);
+  if(!qty || qty<=0){toast(status==='complete'?'Enter the quantity produced':'Enter the quantity produced so far','e');return;}
+  const note=document.getElementById('upr-note').value;
+
+  p.machine=machine;
+  p.qty=qty;
+  p.status=status;
+  if(note) p.note = p.note ? p.note+' — '+note : note;
+
+  if(window.fsReady && p._fbId){
+    fsUpdateDoc(fsDoc('production', p._fbId), {machine:p.machine, qty:p.qty, status:p.status, note:p.note}).catch(e=>console.warn('FS prod update:',e));
+  }
+
+  showOk('upr-ok');
+  toast(status==='complete' ? 'Batch '+p.batch+' marked complete!' : 'Leftover recorded — '+machine+' stays locked','s');
+  clearUpr();
+  updateProdPanel();populateMachines();populateUprBatchSelect();onUprBatchChange();renderUprHistory();
+}
+function clearUpr(){
+  const batchSel=document.getElementById('upr-batch'); if(batchSel) batchSel.value='';
+  const noteEl=document.getElementById('upr-note'); if(noteEl) noteEl.value='';
+  populateUprBatchSelect();
+  onUprBatchChange();
+}
+function renderUprHistory(){
+  const body=document.getElementById('upr-history-body'); if(!body) return;
+  const batches=inProgressBatches();
+  if(!batches.length){
+    body.innerHTML='<div class="empty" style="padding:1.5rem 0"><i class="ti ti-packages"></i><p>No batches in progress</p></div>';
+  } else {
+    body.innerHTML = batches.map(p=>`
+      <div class="srow" style="align-items:flex-start;flex-direction:column;gap:2px;border-bottom:1px solid var(--brd);padding-bottom:8px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;width:100%">
+          <strong style="font-family:'DM Mono',monospace">${p.batch}</strong>
+          <span class="badge" style="background:var(--amb-l);color:var(--amb)">In progress</span>
+        </div>
+        <div style="font-size:12px;color:var(--txt3)">${fmtDate(p.date)} · ${p.type}${p.machine?' · '+p.machine+' (locked)':''}${p.qty?' · '+p.qty+' bags so far':''}</div>
+      </div>
+    `).join('');
+  }
+  renderUprLockedAlert();
+}
+function renderUprLockedAlert(){
+  const alert=document.getElementById('upr-locked-alert'); if(!alert) return;
+  const list=document.getElementById('upr-locked-list');
+  const locked=DB.production.filter(p=>p.status==='in_progress' && p.machine);
+  if(!locked.length){ alert.style.display='none'; return; }
+  alert.style.display='block';
+  if(list) list.innerHTML=locked.map(p=>`<div><i class="ti ti-lock" style="color:var(--amb)"></i> <strong>${p.machine}</strong> — locked by batch ${p.batch} (${p.qty||0} bags so far)</div>`).join('');
 }
 function promptAddMachine(){
   document.getElementById('addmachine-input').value='';
@@ -4595,7 +4728,7 @@ function renderAP(){
     <td>${(p.matSachetQtyUsed||p.matQtyUsed||0)>0?((p.matSachetQtyUsed||p.matQtyUsed)).toFixed(2)+' kg':'—'}</td>
     <td>${p.matPackingLotId?`<span class="badge ba">${p.matPackingLabel||'—'}</span>`:'—'}</td>
     <td>${(p.matPackingBundles||0)>0?p.matPackingBundles+' pks':'—'}</td>
-    <td>${p.type}</td><td style="font-weight:600">${p.qty.toLocaleString()}</td>
+    <td>${p.type}</td><td style="font-weight:600">${p.qty.toLocaleString()}${p.status==='in_progress'?'<div style="margin-top:2px"><span class="badge" style="background:var(--amb-l);color:var(--amb);font-size:9.5px">In progress</span></div>':''}</td>
     <td style="font-weight:600">${totalMatCost>0?'₦'+totalMatCost.toLocaleString(undefined,{maximumFractionDigits:2}):'—'}</td>
     <td>${p.staff}${p.machine?`<div style="font-size:10px;color:var(--txt3);margin-top:2px"><i class="ti ti-engine" style="font-size:10px"></i> ${p.machine}</div>`:''}</td>
     <td style="color:var(--txt3);font-size:12px">${p.note||'—'}</td>
