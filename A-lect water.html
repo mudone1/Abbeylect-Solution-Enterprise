@@ -815,15 +815,6 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                     </div>
                   </div>
                   <div style="font-size:11px;color:var(--grn);margin-top:6px" id="p-mat-sachet-hint">Select a printed rolls lot to see availability</div>
-                  <div class="field" style="margin:.7rem 0 0">
-                    <label>Machine used</label>
-                    <div style="display:flex;gap:6px">
-                      <select id="p-machine" style="flex:1">
-                        <option value="">— Select machine —</option>
-                      </select>
-                      <button class="btn btn-outline btn-sm admin-nav" id="add-machine-btn" style="display:none;flex-shrink:0" onclick="promptAddMachine()" title="Add a new machine"><i class="ti ti-plus"></i></button>
-                    </div>
-                  </div>
                 </div>
 
                 <!-- PACKING BAG material lot -->
@@ -902,9 +893,12 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                   </div>
                   <div class="field">
                     <label>Machine used</label>
-                    <select id="upr-machine" onchange="onUprMachineChange()">
-                      <option value="">— Select machine —</option>
-                    </select>
+                    <div style="display:flex;gap:6px">
+                      <select id="upr-machine" style="flex:1" onchange="onUprMachineChange()">
+                        <option value="">— Select machine —</option>
+                      </select>
+                      <button class="btn btn-outline btn-sm admin-nav" id="add-machine-btn" style="display:none;flex-shrink:0" onclick="promptAddMachine()" title="Add a new machine"><i class="ti ti-plus"></i></button>
+                    </div>
                     <div style="font-size:11px;margin-top:5px" id="upr-machine-hint"></div>
                   </div>
                   <div class="field full">
@@ -915,9 +909,14 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                       <option value="in_progress">Leftovers in Machine</option>
                     </select>
                   </div>
+                  <div class="field full" id="upr-sofar-row" style="display:none;background:var(--surf2);border:1.5px solid var(--brd);border-radius:var(--r);padding:.6rem .85rem">
+                    <label style="margin-bottom:2px">Quantity Produced So Far</label>
+                    <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--grn)" id="upr-sofar-val">0 bags</div>
+                  </div>
                   <div class="field full" id="upr-qty-row" style="display:none">
-                    <label id="upr-qty-lbl">Qty Produced (bags)</label>
-                    <input type="number" id="upr-qty" min="1" step="1" placeholder="e.g. 400" oninput="checkUprReady()">
+                    <label id="upr-qty-lbl">Additional Quantity Produced (bags)</label>
+                    <input type="number" id="upr-qty" min="1" step="1" placeholder="e.g. 120" oninput="checkUprReady()">
+                    <div style="font-size:11px;color:var(--txt3);margin-top:5px" id="upr-qty-hint"></div>
                   </div>
                   <div class="field full"><label>Note (optional)</label><input type="text" id="upr-note" placeholder="e.g. Machine stopped at 4pm — resumes tomorrow"></div>
                 </div>
@@ -945,56 +944,54 @@ table.dt tbody tr:hover td{background:var(--surf2);}
 
       <!-- PRODUCTION CALCULATOR -->
       <div class="page" id="page-prodcalc">
-        <div class="ph"><div><div class="ph-title">Production Calculator</div><div class="ph-sub">Track KG used vs. bags produced and monitor the division (yield) rate per entry</div></div></div>
+        <div class="ph"><div><div class="ph-title">Production Calculator</div><div class="ph-sub">Automatically pulls KG used vs. bags produced from your logged production batches — no manual entry needed</div></div></div>
 
-        <div class="card" style="margin-bottom:1.1rem">
-          <div class="card-title" id="pc-form-title"><i class="ti ti-calculator"></i> New entry</div>
-          <div class="fg">
-            <div class="field">
-              <label>Date</label>
-              <input type="date" id="pc-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('pc-date','pc-date-label')" onblur="hideDateInput('pc-date')">
-              <button class="date-btn" id="pc-date-btn" type="button" onclick="showDateInput('pc-date')">
-                <i class="ti ti-calendar"></i>
-                <span class="db-label" id="pc-date-label">Today</span>
-                <span class="db-change">tap to change</span>
-              </button>
-            </div>
-            <div class="field"><label>Total KG used</label><input type="number" id="pc-kg" placeholder="e.g. 120.5" min="0" step="0.01" oninput="updatePcDivisionPreview()"></div>
-            <div class="field"><label>Quantity of bags produced</label><input type="number" id="pc-bags" placeholder="e.g. 1500" min="0" step="1" oninput="updatePcDivisionPreview()"></div>
-            <div class="field">
-              <label>Division (bags ÷ kg)</label>
-              <input type="text" id="pc-division-preview" readonly value="—" style="font-family:'DM Mono',monospace;font-weight:700;color:#1a5fcb;background:var(--grn-xl);border-color:var(--grn-m);cursor:default">
-            </div>
-            <div class="field full"><label>Note (optional)</label><input type="text" id="pc-note" placeholder="Machine, batch, comments…"></div>
-          </div>
-          <div class="f-actions">
-            <button class="btn btn-primary" id="pc-submit-btn" onclick="submitPc()"><i class="ti ti-check"></i> Add entry</button>
-            <button class="btn btn-outline" id="pc-cancel-btn" onclick="clearPc()" style="display:none"><i class="ti ti-x"></i> Cancel edit</button>
-          </div>
-        </div>
-
+        <!-- DASHBOARD (shown first) -->
         <div class="mrow" style="margin-bottom:1.1rem">
-          <div class="mc b"><div class="mc-ico"><i class="ti ti-stack-2"></i></div><div class="mc-lbl">Total entries</div><div class="mc-val" id="pc-count">0</div><div class="mc-sub">logged</div></div>
+          <div class="mc b"><div class="mc-ico"><i class="ti ti-stack-2"></i></div><div class="mc-lbl">Total entries</div><div class="mc-val" id="pc-count">0</div><div class="mc-sub">in this period</div></div>
           <div class="mc g"><div class="mc-ico"><i class="ti ti-packages"></i></div><div class="mc-lbl">Total bags</div><div class="mc-val" id="pc-total-bags">0</div><div class="mc-sub">produced</div></div>
           <div class="mc a"><div class="mc-ico"><i class="ti ti-weight"></i></div><div class="mc-lbl">Total KG</div><div class="mc-val" id="pc-total-kg">0.00</div><div class="mc-sub">used</div></div>
           <div class="mc t"><div class="mc-ico"><i class="ti ti-divide"></i></div><div class="mc-lbl">Overall avg. division</div><div class="mc-val" id="pc-avg-division">0.00</div><div class="mc-sub">bags / kg</div></div>
         </div>
 
+        <!-- FILTER + SLOT INSPECTOR -->
+        <div class="card" style="margin-bottom:1.1rem">
+          <div class="card-title"><i class="ti ti-filter"></i> Filter by date &amp; inspect a production slot</div>
+          <div class="dr-bar" id="dr-bar-pc"></div>
+          <div class="fg" style="margin-top:.9rem">
+            <div class="field full">
+              <label>Production slot (Inventory ID)</label>
+              <select id="pc-slot-select" onchange="onPcSlotChange()">
+                <option value="">— Select a production slot in this period —</option>
+              </select>
+            </div>
+            <div class="field"><label>KG used</label><input type="text" id="pc-slot-kg" readonly value="—"></div>
+            <div class="field"><label>Bags produced</label><input type="text" id="pc-slot-bags" readonly value="—"></div>
+            <div class="field">
+              <label>Division (bags ÷ kg)</label>
+              <input type="text" id="pc-slot-division" readonly value="—" style="font-family:'DM Mono',monospace;font-weight:700;color:#1a5fcb;background:var(--grn-xl);border-color:var(--grn-m);cursor:default">
+            </div>
+          </div>
+        </div>
+
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:.75rem 1.2rem;background:var(--surf2);border-bottom:1.5px solid var(--brd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
             <div class="card-title" style="margin:0"><i class="ti ti-table"></i> Production entries</div>
-            <button class="btn btn-outline btn-sm" onclick="exportCSV('prodcalc')"><i class="ti ti-download"></i> Export CSV</button>
+            <button class="btn btn-outline btn-sm" onclick="exportCSV('production')"><i class="ti ti-download"></i> Export CSV</button>
+          </div>
+          <div style="padding:.75rem 1.2rem;border-bottom:1.5px solid var(--brd)">
+            <input type="text" id="pc-search" placeholder="Search by Date, Inventory ID, or Production Batch ID…" oninput="renderPc()" style="width:100%;padding:9px 12px;border:1.5px solid var(--brd);border-radius:var(--r);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--txt);background:var(--surf2)">
           </div>
           <div class="tw"><table class="dt">
-            <thead><tr><th>Date</th><th>Total KG used</th><th>Bags produced</th><th>Division</th><th>Note</th><th></th></tr></thead>
-            <tbody id="pc-tbody"><tr><td colspan="6"><div class="empty"><i class="ti ti-calculator"></i><p>No entries logged yet</p></div></td></tr></tbody>
+            <thead><tr><th>Date</th><th>Batch ID</th><th>Inventory ID</th><th>KG used</th><th>Bags produced</th><th>Division</th><th>Status</th></tr></thead>
+            <tbody id="pc-tbody"><tr><td colspan="7"><div class="empty"><i class="ti ti-calculator"></i><p>No production entries yet</p></div></td></tr></tbody>
             <tfoot id="pc-tfoot" style="display:none">
               <tr style="font-weight:700;background:var(--surf2);border-top:2px solid var(--brd)">
-                <td>Totals</td>
+                <td colspan="3">Totals</td>
                 <td id="pc-foot-kg">0.00</td>
                 <td id="pc-foot-bags">0</td>
                 <td id="pc-foot-division">0.00</td>
-                <td colspan="2">Overall average division</td>
+                <td>Avg division</td>
               </tr>
             </tfoot>
           </table></div>
@@ -1943,7 +1940,6 @@ let sType='walkin';
 let spM='CASH';
 let spStage='going';
 let spSelectedTripId=null;
-let pcEditId=null;
 let pendingSale=null;
 let recentSalesScope='today';
 let voidTargetId=null;
@@ -1956,9 +1952,10 @@ const DR_CFG = {
   dash:{render:()=>renderDash(), label:'Dashboard'},
   asales:{render:()=>{const i=document.getElementById('as-search'); renderAS(i?i.value:'');}, label:'All sales'},
   aprod:{render:()=>renderAP(), label:'All production'},
-  aexp:{render:()=>renderAE(), label:'All expenses'}
+  aexp:{render:()=>renderAE(), label:'All expenses'},
+  pc:{render:()=>renderPc(), label:'Production calculator'}
 };
-let DR = {mysales:{from:null,to:null},dash:{from:null,to:null},asales:{from:null,to:null},aprod:{from:null,to:null},aexp:{from:null,to:null}};
+let DR = {mysales:{from:null,to:null},dash:{from:null,to:null},asales:{from:null,to:null},aprod:{from:null,to:null},aexp:{from:null,to:null},pc:{from:null,to:null}};
 const EXP_CATS_BASE = ['Operator','Fuel','Repair','Driver','Maintenance','Equipment & Machinery',
   'Labor & Staff','Logistics','Regulatory','Admin','Marketing','Security','Miscellaneous'];
 // Custom expense categories (persisted in localStorage, loaded at startup)
@@ -2214,7 +2211,7 @@ function finaliseLogin(user){
   document.getElementById('user-av').textContent=user.name[0].toUpperCase();
   setDates();
   populateExpCats();
-  populateMachines();
+  populateUprMachineSelect();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
   resetRollRows();
   applyUserPermissionsToNav(CU);
@@ -2298,7 +2295,7 @@ async function loadFromFirebase(){
     updateExpPanel();updateProdPanel();renderRecentSales();
     updateRMPanel();renderRawMat('');renderInvSummary('');
     updateStockHint();populateBatchSelect();populateMatLotSelect();
-    populateMachines();populateUprBatchSelect();onUprBatchChange();renderUprHistory();
+    populateUprBatchSelect();onUprBatchChange();renderUprHistory();
     renderUsers();
     if(CU&&(CU.role!=='staff'||canAccess('dash'))) renderDash();
     toast('Data synced ✓','s');
@@ -2543,7 +2540,7 @@ function goPage(name,btn){
   document.getElementById('page-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
   const map={mysales:renderMySales,dash:renderDash,asales:()=>renderAS(''),aprod:renderAP,aexp:renderAE,users:renderUsers,
-    prod:()=>{updateProdPanel(); populateMatLotSelect(); populateMachines(); populateUprBatchSelect(); onUprBatchChange(); renderUprHistory();},rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
+    prod:()=>{updateProdPanel(); populateMatLotSelect(); populateUprBatchSelect(); onUprBatchChange(); renderUprHistory();},rawmat:()=>{renderRawMat('');updateRMPanel();renderInvSummary('');updateRmAltIdPreview();},
     prodcalc:()=>{ renderPc(); },
     sale:()=>{ updateStockHint(); if(sType==='supply' && spStage==='return') populateSpTripSelect(); },
     attendance:()=>{updateAttStatusBar();renderAttMy();},
@@ -2555,9 +2552,9 @@ function goPage(name,btn){
 }
 
 function setDates(){
-  // s-date, rm-date, p-date, e-date and pc-date are all handled by date buttons (show Today by default)
-  ['p-date','e-date','rm-date','pc-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  ['p-date-label','e-date-label','rm-date-label','pc-date-label'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Today';});
+  // s-date, rm-date, p-date and e-date are all handled by date buttons (show Today by default)
+  ['p-date','e-date','rm-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['p-date-label','e-date-label','rm-date-label'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Today';});
 }
 
 /* SALE */
@@ -3768,13 +3765,7 @@ function submitProd(){
   const batch=document.getElementById('p-batch').value.trim();
   const type=document.getElementById('p-type').value;
   const note=document.getElementById('p-note').value;
-  const machine=document.getElementById('p-machine')?document.getElementById('p-machine').value:'';
   if(!date||!batch){toast('Fill in the date','e');return;}
-  if(!machine){toast('Select the machine used','e');return;}
-  if(lockedMachines().includes(machine)){
-    toast('Machine "'+machine+'" is locked — finish updating its current batch before starting a new one','e');
-    return;
-  }
 
   // Sachet Bags lot
   const sachetLotRaw=document.getElementById('p-mat-sachet').value;
@@ -3815,11 +3806,13 @@ function submitProd(){
 
   // Qty Produced & final Machine confirmation happen later in Update Production Record —
   // the batch stays "Production In Progress" (and its machine locked) until then.
+  // Qty Produced & Machine Used are assigned later in Update Production Record —
+  // the batch stays "Production In Progress" (machine unassigned/unlocked) until then.
   DB.production.push({id:DB.nid(),date,batch,
     matSachetLotId,matSachetLabel,matSachetQtyUsed,
     matPackingLotId,matPackingLabel,matPackingBundles,
     matLotId,matLotLabel,matQtyUsed,
-    type,qty:0,note,machine,status:'in_progress',staff:CU.name,staffId:CU.id});
+    type,qty:0,note,machine:'',status:'in_progress',staff:CU.name,staffId:CU.id});
   // ── Firebase save ──
   if(window.fsReady){
     const prod=DB.production[DB.production.length-1];
@@ -3828,11 +3821,10 @@ function submitProd(){
   }
   showOk('prod-ok');clearProd();toast('Batch logged! Code: '+batch+' — update it once production wraps up','s');
   updateProdPanel();populateBatchSelect();populateMatLotSelect();updateRMPanel();renderRawMat('');
-  populateMachines();populateUprBatchSelect();onUprBatchChange();renderUprHistory();
+  populateUprBatchSelect();onUprBatchChange();renderUprHistory();
 }
 function clearProd(){
   ['p-note','p-mat-sachet-qty','p-mat-packing-qty'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  const machEl=document.getElementById('p-machine'); if(machEl) machEl.value='';
   setDates();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
   populateMatLotSelect();
@@ -4171,20 +4163,9 @@ function confirmAddCat(){
   toast('Category "'+name+'" added','s');
 }
 
-/* ── Machines (admin-managed list, used on Printed Rolls production logging) ── */
+/* ── Machines (admin-managed list, used on Update Production Record) ── */
 function saveMachines(arr){
   try{ localStorage.setItem('xcel_machines', JSON.stringify(arr)); }catch(e){}
-}
-function populateMachines(selectVal){
-  const sel = document.getElementById('p-machine');
-  if(!sel) return;
-  const prev = selectVal !== undefined ? selectVal : sel.value;
-  const locked = lockedMachines();
-  sel.innerHTML = '<option value="">— Select machine —</option>' + MACHINES.map(m=>{
-    const isLocked = locked.includes(m);
-    return `<option value="${m}" ${isLocked?'disabled':''}>${m}${isLocked?' — locked (leftover pending)':''}</option>`;
-  }).join('');
-  if(prev && MACHINES.includes(prev) && !locked.includes(prev)) sel.value = prev;
 }
 
 /* =============================================
@@ -4228,6 +4209,8 @@ function onUprBatchChange(){
   const statusSel=document.getElementById('upr-status');
   const qtyRow=document.getElementById('upr-qty-row');
   const qtyInput=document.getElementById('upr-qty');
+  const sofarRow=document.getElementById('upr-sofar-row');
+  const sofarVal=document.getElementById('upr-sofar-val');
   if(!p){
     if(lotPrev) lotPrev.value='';
     if(hint) hint.textContent='';
@@ -4235,6 +4218,7 @@ function onUprBatchChange(){
     if(statusSel) statusSel.value='';
     if(qtyRow) qtyRow.style.display='none';
     if(qtyInput) qtyInput.value='';
+    if(sofarRow) sofarRow.style.display='none';
     checkUprReady();
     return;
   }
@@ -4246,6 +4230,11 @@ function onUprBatchChange(){
   if(statusSel) statusSel.value='';
   if(qtyRow) qtyRow.style.display='none';
   if(qtyInput) qtyInput.value='';
+  // Keep the cumulative quantity produced so far visible when reopening a leftover record
+  if(sofarRow){
+    if(p.qty>0){ sofarRow.style.display='flex'; if(sofarVal) sofarVal.textContent=p.qty.toLocaleString()+' bags'; }
+    else { sofarRow.style.display='none'; }
+  }
   checkUprReady();
 }
 function onUprMachineChange(){ checkUprReady(); }
@@ -4253,9 +4242,21 @@ function onUprStatusChange(){
   const status=document.getElementById('upr-status').value;
   const row=document.getElementById('upr-qty-row');
   const lbl=document.getElementById('upr-qty-lbl');
-  if(status==='complete'){ row.style.display='flex'; lbl.textContent='Qty Produced (bags)'; }
-  else if(status==='in_progress'){ row.style.display='flex'; lbl.textContent='Qty Produced So Far (bags)'; }
-  else { row.style.display='none'; }
+  const qtyHint=document.getElementById('upr-qty-hint');
+  const id=document.getElementById('upr-batch').value;
+  const p=DB.production.find(x=>String(x.id)===id);
+  const priorQty=p?(p.qty||0):0;
+  if(status==='complete'){
+    row.style.display='flex';
+    lbl.textContent = priorQty>0 ? 'Additional Quantity Produced (bags)' : 'Qty Produced (bags)';
+    if(qtyHint) qtyHint.textContent = priorQty>0 ? 'Added on top of the '+priorQty.toLocaleString()+' bags already produced so far' : '';
+  }
+  else if(status==='in_progress'){
+    row.style.display='flex';
+    lbl.textContent = priorQty>0 ? 'Additional Quantity Produced (bags)' : 'Qty Produced So Far (bags)';
+    if(qtyHint) qtyHint.textContent = priorQty>0 ? 'Added on top of the '+priorQty.toLocaleString()+' bags already produced so far' : '';
+  }
+  else { row.style.display='none'; if(qtyHint) qtyHint.textContent=''; }
   checkUprReady();
 }
 function checkUprReady(){
@@ -4279,12 +4280,13 @@ function submitProdUpdate(){
   if(lockedMachines(p.id).includes(machine)){toast('Machine "'+machine+'" is locked by another in-progress batch','e');return;}
   const status=document.getElementById('upr-status').value;
   if(status!=='complete' && status!=='in_progress'){toast('Select a status','e');return;}
-  const qty=parseFloat(document.getElementById('upr-qty').value);
-  if(!qty || qty<=0){toast(status==='complete'?'Enter the quantity produced':'Enter the quantity produced so far','e');return;}
+  const addedQty=parseFloat(document.getElementById('upr-qty').value);
+  if(!addedQty || addedQty<=0){toast(status==='complete'?'Enter the quantity produced':'Enter the quantity produced so far','e');return;}
   const note=document.getElementById('upr-note').value;
 
+  // Accumulate — never overwrite — so the batch's qty always reflects the running total
   p.machine=machine;
-  p.qty=qty;
+  p.qty=(p.qty||0)+addedQty;
   p.status=status;
   if(note) p.note = p.note ? p.note+' — '+note : note;
 
@@ -4293,9 +4295,9 @@ function submitProdUpdate(){
   }
 
   showOk('upr-ok');
-  toast(status==='complete' ? 'Batch '+p.batch+' marked complete!' : 'Leftover recorded — '+machine+' stays locked','s');
+  toast(status==='complete' ? 'Batch '+p.batch+' marked complete! Total: '+p.qty.toLocaleString()+' bags' : 'Leftover recorded — '+machine+' stays locked ('+p.qty.toLocaleString()+' bags so far)','s');
   clearUpr();
-  updateProdPanel();populateMachines();populateUprBatchSelect();onUprBatchChange();renderUprHistory();
+  updateProdPanel();populateUprBatchSelect();onUprBatchChange();renderUprHistory();
 }
 function clearUpr(){
   const batchSel=document.getElementById('upr-batch'); if(batchSel) batchSel.value='';
@@ -4347,7 +4349,9 @@ function confirmAddMachine(){
   }
   MACHINES.push(name);
   saveMachines(MACHINES);
-  populateMachines(name);
+  const curBatchId = document.getElementById('upr-batch')?.value;
+  const curBatch = curBatchId ? DB.production.find(x=>String(x.id)===curBatchId) : null;
+  populateUprMachineSelect(curBatch?curBatch.id:undefined, name);
   closeAddMachineMo();
   toast('Machine "'+name+'" added','s');
 }
@@ -4386,117 +4390,91 @@ function updateExpPanel(){
 /* =============================================
    PRODUCTION CALCULATOR — KG used vs bags produced, division (yield) tracking
    ============================================= */
-function updatePcDivisionPreview(){
-  const kg=parseFloat(document.getElementById('pc-kg').value)||0;
-  const bags=parseFloat(document.getElementById('pc-bags').value)||0;
-  const el=document.getElementById('pc-division-preview');
-  if(!el) return;
-  el.value = kg>0 ? (bags/kg).toFixed(4) : '—';
+/* PRODUCTION CALCULATOR — fully automated, derived from logged production batches
+   (no manual KG/bags entry — those already exist on each production record) */
+function pcEligible(){
+  // Production entries that have a recorded KG-used value (Printed Rolls material draw)
+  return DB.production.filter(p => (p.matSachetQtyUsed||0) > 0);
 }
-
-function submitPc(){
-  const dateVal=document.getElementById('pc-date').value;
-  const date=dateVal||TODAY;
-  const kg=parseFloat(document.getElementById('pc-kg').value);
-  const bags=parseFloat(document.getElementById('pc-bags').value);
-  const note=document.getElementById('pc-note').value;
-
-  if(!kg||kg<=0){toast('Enter the total KG used','e');return;}
-  if(bags===undefined||bags===null||isNaN(bags)||bags<0){toast('Enter the quantity of bags produced','e');return;}
-
-  const division=bags/kg;
-
-  if(pcEditId){
-    // ── EDIT — update existing record ──
-    const rec=DB.prodcalc.find(r=>r.id===pcEditId);
-    if(!rec){toast('Entry not found','e');clearPc();return;}
-    Object.assign(rec,{date,kg,bags,division,note});
-    if(window.fsReady && rec._fbId){
-      const clean=Object.fromEntries(Object.entries(rec).filter(([,v])=>v!==undefined));
-      fsUpdateDoc(fsDoc('prodcalc', rec._fbId), clean).catch(e=>console.warn('FS prodcalc update:',e));
-    }
-    toast('Entry updated!','s');
+function populatePcSlotSelect(){
+  const sel=document.getElementById('pc-slot-select'); if(!sel) return;
+  const cur=sel.value;
+  const rows=pcEligible().filter(p=>inDR('pc', p.date)).slice().reverse();
+  if(!rows.length){
+    sel.innerHTML='<option value="">— No production slots in this period —</option>';
   } else {
-    // ── ADD — new record ──
-    const rec={id:DB.nid(),date,kg,bags,division,note,staff:CU.name,staffId:CU.id,ts:Date.now()};
-    DB.prodcalc.push(rec);
-    if(window.fsReady){
-      const clean=Object.fromEntries(Object.entries(rec).filter(([,v])=>v!==undefined));
-      fsAddDoc(fsCol('prodcalc'), clean).then(ref=>{ rec._fbId=ref.id; }).catch(e=>console.warn('FS prodcalc write:',e));
-    }
-    toast('Entry added!','s');
+    sel.innerHTML='<option value="">— Select a production slot —</option>'+rows.map(p=>
+      `<option value="${p.id}">${p.batch} — ${p.matSachetLabel||'—'} — ${fmtDate(p.date)}</option>`
+    ).join('');
   }
-  clearPc();
-  renderPc();
+  if(rows.some(p=>String(p.id)===cur)) sel.value=cur;
+  onPcSlotChange();
 }
-
-function editPc(id){
-  const rec=DB.prodcalc.find(r=>r.id===id);
-  if(!rec) return;
-  pcEditId=id;
-  document.getElementById('pc-date').value=rec.date===TODAY?'':rec.date;
-  document.getElementById('pc-date-label').textContent = rec.date===TODAY ? 'Today' : (()=>{
-    const [y,m,d]=rec.date.split('-');
-    const months='Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
-    return parseInt(d)+' '+months[parseInt(m)-1]+' '+y.slice(2);
-  })();
-  document.getElementById('pc-kg').value=rec.kg;
-  document.getElementById('pc-bags').value=rec.bags;
-  document.getElementById('pc-note').value=rec.note||'';
-  updatePcDivisionPreview();
-  document.getElementById('pc-form-title').innerHTML='<i class="ti ti-edit"></i> Edit entry';
-  document.getElementById('pc-submit-btn').innerHTML='<i class="ti ti-check"></i> Update entry';
-  document.getElementById('pc-cancel-btn').style.display='';
-  document.querySelector('#page-prodcalc .card').scrollIntoView({behavior:'smooth',block:'start'});
+function onPcSlotChange(){
+  const sel=document.getElementById('pc-slot-select'); if(!sel) return;
+  const p=DB.production.find(x=>String(x.id)===sel.value);
+  const kgEl=document.getElementById('pc-slot-kg');
+  const bagsEl=document.getElementById('pc-slot-bags');
+  const divEl=document.getElementById('pc-slot-division');
+  if(!p){
+    if(kgEl) kgEl.value='—'; if(bagsEl) bagsEl.value='—'; if(divEl) divEl.value='—';
+    return;
+  }
+  const kg=p.matSachetQtyUsed||0, bags=p.qty||0;
+  if(kgEl) kgEl.value=kg.toFixed(2)+' kg';
+  if(bagsEl) bagsEl.value=bags.toLocaleString()+' bags'+(p.status==='in_progress'?' (so far)':'');
+  if(divEl) divEl.value = kg>0 ? (bags/kg).toFixed(4) : '—';
 }
-
-function deletePc(id){
-  promptDel('prodcalc', id);
-}
-
-function clearPc(){
-  pcEditId=null;
-  ['pc-kg','pc-bags','pc-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('pc-division-preview').value='—';
-  document.getElementById('pc-date').value='';
-  document.getElementById('pc-date-label').textContent='Today';
-  document.getElementById('pc-form-title').innerHTML='<i class="ti ti-calculator"></i> New entry';
-  document.getElementById('pc-submit-btn').innerHTML='<i class="ti ti-check"></i> Add entry';
-  document.getElementById('pc-cancel-btn').style.display='none';
-}
-
 function renderPc(){
   const tb=document.getElementById('pc-tbody');
   const tf=document.getElementById('pc-tfoot');
   if(!tb) return;
-  const rows=DB.prodcalc.slice().sort((a,b)=>(a.ts||0)-(b.ts||0));
+  const searchEl=document.getElementById('pc-search');
+  const q=(searchEl?searchEl.value:'').trim().toLowerCase();
+
+  let rows=DB.production.filter(p=>inDR('pc', p.date));
+  if(q){
+    rows=rows.filter(p=>
+      fmtDate(p.date).toLowerCase().includes(q) ||
+      (p.date||'').includes(q) ||
+      (p.batch||'').toLowerCase().includes(q) ||
+      (p.matSachetLabel||'').toLowerCase().includes(q) ||
+      (p.matPackingLabel||'').toLowerCase().includes(q)
+    );
+  }
+  rows=rows.slice().sort((a,b)=>(a.ts||a.id)-(b.ts||b.id));
 
   document.getElementById('pc-count').textContent=rows.length;
 
   if(!rows.length){
-    tb.innerHTML='<tr><td colspan="6"><div class="empty"><i class="ti ti-calculator"></i><p>No entries logged yet</p></div></td></tr>';
+    tb.innerHTML='<tr><td colspan="7"><div class="empty"><i class="ti ti-calculator"></i><p>No production entries found</p></div></td></tr>';
     tf.style.display='none';
     document.getElementById('pc-total-bags').textContent='0';
     document.getElementById('pc-total-kg').textContent='0.00';
     document.getElementById('pc-avg-division').textContent='0.00';
+    populatePcSlotSelect();
     return;
   }
 
-  tb.innerHTML=rows.slice().reverse().map(r=>`
-    <tr>
-      <td>${fmtDate(r.date)}</td>
-      <td style="font-family:'DM Mono',monospace">${r.kg.toFixed(2)}</td>
-      <td style="font-family:'DM Mono',monospace;font-weight:600">${r.bags.toLocaleString()}</td>
-      <td style="font-family:'DM Mono',monospace;font-weight:700;color:#1a5fcb">${r.division.toFixed(4)}</td>
-      <td style="color:var(--txt3);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.note||'—'}</td>
-      <td style="display:flex;gap:5px">
-        <button class="btn btn-outline btn-sm" onclick="editPc(${r.id})" title="Edit"><i class="ti ti-edit"></i></button>
-        <button class="btn btn-danger btn-sm" onclick="deletePc(${r.id})" title="Delete"><i class="ti ti-trash"></i></button>
-      </td>
-    </tr>`).join('');
+  tb.innerHTML=rows.slice().reverse().map(p=>{
+    const kg=p.matSachetQtyUsed||0, bags=p.qty||0;
+    const division = kg>0 ? (bags/kg).toFixed(4) : '—';
+    const statusBadge = p.status==='in_progress'
+      ? '<span class="badge" style="background:var(--amb-l);color:var(--amb)">In progress</span>'
+      : '<span class="badge" style="background:var(--grn-l);color:var(--grn)">Complete</span>';
+    return `<tr>
+      <td>${fmtDate(p.date)}</td>
+      <td style="font-family:'DM Mono',monospace">${p.batch}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${p.matSachetLabel||'—'}</td>
+      <td style="font-family:'DM Mono',monospace">${kg.toFixed(2)}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:600">${bags.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:700;color:#1a5fcb">${division}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
 
-  const totalKg=rows.reduce((a,r)=>a+r.kg,0);
-  const totalBags=rows.reduce((a,r)=>a+r.bags,0);
+  const totalKg=rows.reduce((a,p)=>a+(p.matSachetQtyUsed||0),0);
+  const totalBags=rows.reduce((a,p)=>a+(p.qty||0),0);
   const avgDivision=totalKg>0 ? totalBags/totalKg : 0;
 
   document.getElementById('pc-total-bags').textContent=totalBags.toLocaleString();
@@ -4506,6 +4484,8 @@ function renderPc(){
   document.getElementById('pc-foot-bags').textContent=totalBags.toLocaleString();
   document.getElementById('pc-foot-division').textContent=avgDivision.toFixed(4);
   tf.style.display='';
+
+  populatePcSlotSelect();
 }
 
 /* MY SALES */
@@ -5322,7 +5302,6 @@ function confirmDel(){
   if(delType==='production'){renderAP();populateBatchSelect();updateBatchMetricsPreview();populateMatLotSelect();}
   if(delType==='expenses')renderAE();
   if(delType==='rawmats'){renderRawMat('');updateRMPanel();updateBatchMetricsPreview();renderAP();populateMatLotSelect();renderInvSummary('');}
-  if(delType==='prodcalc'){ if(pcEditId===delT.id) clearPc(); renderPc(); }
 }
 
 /* EXPORT */
