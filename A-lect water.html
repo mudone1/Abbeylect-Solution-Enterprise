@@ -552,6 +552,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
             <div class="pos-head"><div class="pos-head-ico"><i class="ti ti-shopping-cart"></i></div><div><h2>New sale entry</h2><p>Fill in the transaction details below</p></div></div>
             <div class="pos-body">
               <div class="ok" id="sale-ok"><i class="ti ti-circle-check"></i> Sale recorded successfully!</div>
+              <div class="ok" id="leakage-ok"><i class="ti ti-circle-check"></i> Factory leakage logged!</div>
               <div class="fg">
 
                 <!-- SALE TYPE -->
@@ -560,6 +561,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                   <div class="mpills" id="stype-pills">
                     <button class="mpill sel" onclick="selSaleType('walkin',this)"><i class="ti ti-building-store"></i> Sales in factory</button>
                     <button class="mpill" onclick="selSaleType('supply',this)"><i class="ti ti-truck-delivery"></i> Driver (Supply)</button>
+                    <button class="mpill" onclick="selSaleType('leakage',this)"><i class="ti ti-droplet-off"></i> Factory leakage (no sale)</button>
                   </div>
                 </div>
 
@@ -700,9 +702,24 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                   <div class="field full"><label>Return note (optional)</label><input type="text" id="sp-return-note" placeholder="Anything to add about the return…"></div>
                 </div>
                 </div>
+
+                <!-- FACTORY LEAKAGE (no sale) FIELDS -->
+                <div id="leakage-fields" style="display:none">
+                <div class="field full" style="background:var(--red-l);border:1.5px solid #efb0b0;border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.2rem;font-size:12.5px;color:var(--red)">
+                  <i class="ti ti-info-circle"></i> Use this to record bags that leaked, burst, or were spoiled at the factory (production/storage/handling) — <strong>not</strong> a customer sale. These bags are removed from available stock and never billed.
+                </div>
+                <div class="field">
+                  <label>Product</label>
+                  <select id="lk-product" onchange="updateR();updateStockHint()">
+                    <option>Pure water 50CL</option><option>Dispenser water</option><option>Bottle water 50CL</option>
+                  </select>
+                </div>
+                <div class="field"><label>Qty leaked / wasted (bags)</label><input type="number" id="lk-qty" placeholder="e.g. 8" min="1" oninput="updateR();updateStockHint()"><div id="lk-stock-hint" style="margin-top:5px;font-size:12px;color:var(--txt3)"></div></div>
+                <div class="field full"><label>Note (optional)</label><input type="text" id="lk-note" placeholder="e.g. Torn during packing, storage burst…"></div>
+                </div>
               </div>
               <div class="f-actions">
-                <button class="btn btn-primary" onclick="submitSale()"><i class="ti ti-check"></i> Confirm sale</button>
+                <button class="btn btn-primary" onclick="submitSale()" id="sale-submit-btn"><i class="ti ti-check"></i> Confirm sale</button>
                 <button class="btn btn-outline" onclick="clearSale()"><i class="ti ti-refresh"></i> Clear</button>
               </div>
             </div>
@@ -711,6 +728,10 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           <!-- RECEIPT PANEL -->
           <div class="receipt">
             <div class="r-head"><h3><i class="ti ti-receipt" style="color:#4d9aff"></i> <span id="r-head-title">Sale receipt</span></h3><span id="r-date">Today</span></div>
+            <div class="r-body" id="r-body-leakage" style="display:none">
+              <div class="r-row"><span class="rl">Product</span><span class="rv" id="rl-prod">—</span></div>
+              <div class="r-row"><span class="rl">Qty leaked</span><span class="rv" id="rl-qty" style="color:var(--red)">—</span></div>
+            </div>
             <div class="r-body" id="r-body-walkin">
               <div class="r-row"><span class="rl">Product</span><span class="rv" id="r-prod">—</span></div>
               <div class="r-row"><span class="rl">Quantity</span><span class="rv" id="r-qty">—</span></div>
@@ -770,6 +791,27 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           <div class="tw"><table class="dt">
             <thead><tr><th>Print</th><th>Sale ID</th><th>Type</th><th>Date</th><th>Product</th><th>Qty</th><th>Amount</th><th>Method</th></tr></thead>
             <tbody id="recent-sales-tbody"><tr><td colspan="8"><div class="empty"><i class="ti ti-receipt"></i><p>No sales recorded yet today</p></div></td></tr></tbody>
+          </table></div>
+        </div>
+
+        <!-- RECENT FACTORY LEAKAGE -->
+        <div class="card" style="padding:0;overflow:hidden;margin-top:1.25rem;border-top:3px solid var(--brd)">
+          <div class="rs-head" style="background:var(--surf2);flex-wrap:wrap;gap:9px">
+            <div class="card-title" style="margin:0"><i class="ti ti-droplet-off" style="color:var(--red-m)"></i> Recent factory leakage</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div class="dr-presets">
+                <button class="dr-preset-btn sel" id="lk-scope-today" onclick="setRecentLeakageScope('today')">Today</button>
+                <button class="dr-preset-btn" id="lk-scope-all" onclick="setRecentLeakageScope('all')">All time</button>
+              </div>
+              <div class="sbar" style="max-width:260px">
+                <i class="ti ti-search"></i>
+                <input type="text" id="lk-search" placeholder="Search product, note…" oninput="renderRecentLeakage(this.value)">
+              </div>
+            </div>
+          </div>
+          <div class="tw"><table class="dt">
+            <thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Logged by</th><th>Note</th><th></th></tr></thead>
+            <tbody id="recent-leakage-tbody"><tr><td colspan="6"><div class="empty"><i class="ti ti-droplet-off"></i><p>No factory leakage logged yet today</p></div></td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -1633,6 +1675,18 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <input type="checkbox" id="reset-attendance" style="display:none" checked>
               </label>
 
+              <label class="reset-check-row" onclick="toggleResetCheck('reset-leakage')">
+                <div style="display:flex;align-items:center;gap:10px;flex:1">
+                  <div class="reset-check-icon" style="background:var(--red-l);color:var(--red-m)"><i class="ti ti-droplet-off"></i></div>
+                  <div>
+                    <div style="font-size:13px;font-weight:500">Factory leakage logs</div>
+                    <div style="font-size:11px;color:var(--txt3)" id="reset-leakage-count">— records</div>
+                  </div>
+                </div>
+                <div class="reset-chk" id="reset-leakage-chk"><i class="ti ti-check"></i></div>
+                <input type="checkbox" id="reset-leakage" style="display:none" checked>
+              </label>
+
             </div>
 
             <div style="display:flex;gap:8px;margin-top:1.2rem">
@@ -1651,6 +1705,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Raw material lots</span><strong id="rs-total-rawmats">—</strong></div>
                 <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Expenses</span><strong id="rs-total-expenses">—</strong></div>
                 <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Attendance records</span><strong id="rs-total-attendance">—</strong></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Factory leakage logs</span><strong id="rs-total-leakage">—</strong></div>
               </div>
             </div>
 
@@ -1921,7 +1976,7 @@ const DB={
     {id:2,name:'Owner',username:'admin',password:'admin99',role:'admin',jobRole:'manager',active:true},
     {id:3,name:'Manager',username:'manager',password:'mgr456',role:'manager',jobRole:'manager',active:true},
   ],
-  sales:[],production:[],expenses:[],rawmats:[],reconciliations:[],attendance:[],prodcalc:[],
+  sales:[],production:[],expenses:[],rawmats:[],reconciliations:[],attendance:[],prodcalc:[],leakage:[],
   _id:100,nid(){return++this._id;}
 };
 const MAT_CATS=[
@@ -1937,6 +1992,7 @@ let _geoMode = 'login';
 let _attClockInterval = null;
 let _attTickCount = 0;
 let sType='walkin';
+let recentLeakageScope='today';
 let spM='CASH';
 let spStage='going';
 let spSelectedTripId=null;
@@ -2219,7 +2275,7 @@ function finaliseLogin(user){
   const firstPage = ALL_PAGES.find(p=>CU.permissions.pages[p.key]);
   const firstNav = firstPage ? document.getElementById('nav-'+firstPage.key) : document.getElementById('nav-sale');
   goPage(firstPage?firstPage.key:'sale', firstNav);
-  updateExpPanel();updateProdPanel();renderRecentSales();
+  updateExpPanel();updateProdPanel();renderRecentSales();renderRecentLeakage();
   updateRMPanel();renderRawMat('');renderInvSummary('');updateRmAltIdPreview();
   updateStockHint();
 
@@ -2268,7 +2324,7 @@ async function loadFromFirebase(){
   }
   toast('Syncing data…','');
   try{
-    const cols=['sales','production','expenses','rawmats','prodcalc','users','attendance'];
+    const cols=['sales','production','expenses','rawmats','prodcalc','users','attendance','leakage'];
     for(const col of cols){
       const snap=await fsGetDocs(fsCol(col));
       snap.forEach(d=>{
@@ -2293,7 +2349,7 @@ async function loadFromFirebase(){
       });
     }
     // Re-render everything with fresh data
-    updateExpPanel();updateProdPanel();renderRecentSales();
+    updateExpPanel();updateProdPanel();renderRecentSales();renderRecentLeakage();
     updateRMPanel();renderRawMat('');renderInvSummary('');
     updateStockHint();populateBatchSelect();populateMatLotSelect();
     populateUprBatchSelect();onUprBatchChange();renderUprHistory();
@@ -2698,12 +2754,19 @@ function selSaleType(t, el){
   el.classList.add('sel');
   document.getElementById('walkin-fields').style.display = t==='walkin' ? 'contents' : 'none';
   document.getElementById('supply-fields').style.display = t==='supply' ? 'contents' : 'none';
+  document.getElementById('leakage-fields').style.display = t==='leakage' ? '' : 'none';
   document.getElementById('r-body-walkin').style.display = t==='walkin' ? '' : 'none';
   document.getElementById('r-body-supply').style.display = t==='supply' ? '' : 'none';
-  document.getElementById('r-head-title').textContent = t==='walkin' ? 'Factory sale receipt' : 'Supply sale receipt';
-  document.getElementById('r-lock-note').innerHTML = '<i class="ti ti-lock" style="font-size:11px"></i> Revenue figures are admin-only';
+  document.getElementById('r-body-leakage').style.display = t==='leakage' ? '' : 'none';
+  document.getElementById('r-total-row').style.display = t==='leakage' ? 'none' : '';
+  document.getElementById('r-head-title').textContent = t==='walkin' ? 'Factory sale receipt' : (t==='supply' ? 'Supply sale receipt' : 'Factory leakage log');
+  document.getElementById('r-lock-note').innerHTML = t==='leakage'
+    ? '<i class="ti ti-info-circle" style="font-size:11px"></i> Not a sale — removed from stock, no revenue'
+    : '<i class="ti ti-lock" style="font-size:11px"></i> Revenue figures are admin-only';
+  const submitBtn = document.getElementById('sale-submit-btn');
+  if(submitBtn) submitBtn.innerHTML = t==='leakage' ? '<i class="ti ti-droplet-off"></i> Log leakage' : '<i class="ti ti-check"></i> Confirm sale';
+  document.getElementById('cash-tracker').classList.add('hidden');
   if(t==='supply'){
-    document.getElementById('cash-tracker').classList.add('hidden');
     selSpStage('going', document.querySelector('#sp-stage-pills .mpill'));
   }
   updateR();
@@ -2815,6 +2878,16 @@ function selM(m, el){
 }
 
 function updateR(){
+  if(sType==='leakage'){
+    const lkProduct = document.getElementById('lk-product').value||'—';
+    const lkQty     = parseFloat(document.getElementById('lk-qty').value)||0;
+    document.getElementById('rl-prod').textContent = lkProduct;
+    document.getElementById('rl-qty').textContent  = lkQty ? lkQty+' bags' : '—';
+    document.getElementById('cash-tracker').classList.add('hidden');
+    const dateVal = document.getElementById('s-date').value;
+    document.getElementById('r-date').textContent = (!dateVal||dateVal===TODAY) ? 'Today' : document.getElementById('s-date-label').textContent;
+    return;
+  }
   if(sType==='supply'){
     if(spStage==='going'){
       const carried=parseFloat(document.getElementById('sp-carried').value)||0;
@@ -2943,23 +3016,31 @@ function getAvailableBagsForSale(product){
       if(s.type === 'supply') return a + (s.carried || 0) + (s.extra || 0); // carried+extra = bags dispatched on the going leg
       return a;
     }, 0);
-  return Math.max(0, produced - sold);
+  const leaked = DB.leakage
+    .filter(l => l.product === product)
+    .reduce((a, l) => a + (l.qty || 0), 0);
+  return Math.max(0, produced - sold - leaked);
 }
 
 function updateStockHint(){
-  const isSupply = sType === 'supply';
+  const isSupply  = sType === 'supply';
+  const isLeakage = sType === 'leakage';
   if(isSupply && spStage!=='going'){
     // Return leg doesn't draw new stock from inventory — nothing to check here
     return;
   }
-  const productEl = document.getElementById(isSupply ? 'sp-product' : 's-product');
-  const hintEl    = document.getElementById(isSupply ? 'sp-stock-hint' : 's-stock-hint');
+  const productEl = document.getElementById(isLeakage ? 'lk-product' : (isSupply ? 'sp-product' : 's-product'));
+  const hintEl    = document.getElementById(isLeakage ? 'lk-stock-hint' : (isSupply ? 'sp-stock-hint' : 's-stock-hint'));
   if(!productEl || !hintEl) return;
 
   const product = productEl.value;
   const avail   = getAvailableBagsForSale(product);
   let primary, entered;
-  if(isSupply){
+  if(isLeakage){
+    const qty=parseFloat(document.getElementById('lk-qty')?.value)||0;
+    primary = qty;
+    entered = qty;
+  } else if(isSupply){
     const carried=parseFloat(document.getElementById('sp-carried')?.value)||0;
     primary = carried;
     entered = carried;
@@ -2976,7 +3057,7 @@ function updateStockHint(){
   if(none){
     hintEl.innerHTML = '<span style="color:var(--red-m);font-weight:600"><i class="ti ti-alert-triangle" style="font-size:11px"></i> No bags available in production inventory</span>';
   } else if(overPrimary){
-    hintEl.innerHTML = '<span style="color:var(--red-m);font-weight:600"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Only <strong>'+avail.toLocaleString()+'</strong> bags available — reduce '+(isSupply?'bags carried':'quantity')+'</span>';
+    hintEl.innerHTML = '<span style="color:var(--red-m);font-weight:600"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Only <strong>'+avail.toLocaleString()+'</strong> bags available — reduce '+(isLeakage?'qty leaked':(isSupply?'bags carried':'quantity'))+'</span>';
   } else if(over){
     hintEl.innerHTML = '<span style="color:var(--red-m);font-weight:600"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Only <strong>'+avail.toLocaleString()+'</strong> bags available — reduce '+(isSupply?'extra bags':'exchange qty')+'</span>';
   } else {
@@ -2986,6 +3067,37 @@ function updateStockHint(){
 
 
 function submitSale(){
+  if(sType==='leakage'){
+    const dateVal = document.getElementById('s-date').value;
+    const date    = dateVal || TODAY;
+    const product = document.getElementById('lk-product').value;
+    const qty     = parseFloat(document.getElementById('lk-qty').value);
+    const note    = document.getElementById('lk-note').value;
+
+    if(!qty){toast('Enter the quantity leaked/wasted','e');return;}
+
+    // ── STOCK CHECK — leaked bags must fit available stock ──
+    const _lkAvail = getAvailableBagsForSale(product);
+    if(qty > _lkAvail){
+      toast('Only '+_lkAvail.toLocaleString()+' bags available in production — reduce quantity','e');
+      updateStockHint();
+      return;
+    }
+
+    const id = DB.nid();
+    const entry = { id, date, product, qty, note, staff:CU.name, staffId:CU.id, ts:Date.now() };
+    DB.leakage.push(entry);
+    if(window.fsReady){
+      const clean=Object.fromEntries(Object.entries(entry).filter(([,v])=>v!==undefined));
+      fsAddDoc(fsCol('leakage'), clean).then(ref=>{ entry._fbId=ref.id; }).catch(e=>console.warn('FS leakage write:',e));
+    }
+    showOk('leakage-ok'); clearSale(); toast('Factory leakage logged ✓','s');
+    renderRecentLeakage();
+    updateStockHint();
+    const contentEl = document.querySelector('.content');
+    if(contentEl) contentEl.scrollTop = 0;
+    return;
+  }
   if(sType==='supply'){
     const dateVal = document.getElementById('s-date').value;
     const date    = dateVal || TODAY;
@@ -3367,6 +3479,11 @@ function clearSale(){
   if(document.querySelectorAll('#sp-stage-pills .mpill')[0]) document.querySelectorAll('#sp-stage-pills .mpill')[0].classList.add('sel');
   const goingFields=document.getElementById('sp-going-fields'); if(goingFields) goingFields.style.display='';
   const returnFields=document.getElementById('sp-return-fields'); if(returnFields) returnFields.style.display='none';
+  // reset leakage fields
+  const lkQty=document.getElementById('lk-qty'); if(lkQty) lkQty.value='';
+  const lkNote=document.getElementById('lk-note'); if(lkNote) lkNote.value='';
+  const rlProd=document.getElementById('rl-prod'); if(rlProd) rlProd.textContent='—';
+  const rlQty=document.getElementById('rl-qty'); if(rlQty) rlQty.textContent='—';
   // reset sale type back to walk-in
   document.querySelectorAll('#stype-pills .mpill').forEach(p=>p.classList.remove('sel'));
   document.querySelectorAll('#stype-pills .mpill')[0].classList.add('sel');
@@ -4626,6 +4743,36 @@ function renderRecentSales(q){
   }).join('');
 }
 
+function setRecentLeakageScope(scope){
+  recentLeakageScope=scope;
+  document.getElementById('lk-scope-today').classList.toggle('sel', scope==='today');
+  document.getElementById('lk-scope-all').classList.toggle('sel', scope==='all');
+  const inp=document.getElementById('lk-search');
+  renderRecentLeakage(inp?inp.value:'');
+}
+function renderRecentLeakage(q){
+  if(!CU)return;
+  const tb=document.getElementById('recent-leakage-tbody');
+  if(!tb)return;
+  q=(q||'').trim().toLowerCase();
+  const d=(DB.leakage||[]).filter(l=>l.staffId===CU.id &&
+    (recentLeakageScope==='all' || l.date===TODAY) &&
+    (!q || [l.product,l.note].join(' ').toLowerCase().includes(q)));
+  if(!d.length){
+    tb.innerHTML=`<tr><td colspan="6"><div class="empty"><i class="ti ti-droplet-off"></i><p>${q?'No matching leakage entries found':(recentLeakageScope==='today'?'No factory leakage logged yet today':'No factory leakage logged yet')}</p></div></td></tr>`;
+    return;
+  }
+  const canDelete = CU && (CU.role!=='staff' || canDo('void_sale'));
+  tb.innerHTML=d.slice().reverse().map(l=>`<tr>
+    <td>${fmtDate(l.date)}</td>
+    <td>${l.product}</td>
+    <td style="font-weight:600;color:var(--red-m)">${l.qty}</td>
+    <td>${l.staff||'—'}</td>
+    <td style="color:var(--txt3);font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.note||'—'}</td>
+    <td>${canDelete?`<button class="btn btn-danger btn-sm" onclick="promptDel('leakage',${l.id})"><i class="ti ti-trash"></i></button>`:''}</td>
+  </tr>`).join('');
+}
+
 /* ALL SALES */
 function renderAS(q){
   const d=DB.sales.filter(s=>inDR('asales',s.date) && (!q||[s.product,s.staff,s.method,s.note,s.driver].join(' ').toLowerCase().includes(q.toLowerCase())));
@@ -5323,6 +5470,7 @@ function confirmDel(){
   if(delType==='production'){renderAP();populateBatchSelect();updateBatchMetricsPreview();populateMatLotSelect();}
   if(delType==='expenses')renderAE();
   if(delType==='rawmats'){renderRawMat('');updateRMPanel();updateBatchMetricsPreview();renderAP();populateMatLotSelect();renderInvSummary('');}
+  if(delType==='leakage'){renderRecentLeakage();updateStockHint();}
 }
 
 /* EXPORT */
@@ -5536,17 +5684,18 @@ function renderResetPage(){
     rawmats: DB.rawmats.length,
     expenses: DB.expenses.length,
     attendance: (DB.attendance||[]).length,
+    leakage: (DB.leakage||[]).length,
   };
   // Update count labels on checkboxes
-  const labels = {sales:'sale', production:'batch', rawmats:'lot', expenses:'expense', attendance:'record'};
+  const labels = {sales:'sale', production:'batch', rawmats:'lot', expenses:'expense', attendance:'record', leakage:'leakage log'};
   for(const [key, count] of Object.entries(counts)){
     const el = document.getElementById('reset-'+key+'-count');
-    if(el) el.textContent = count + ' ' + labels[key] + (count!==1?'s':'');
+    if(el) el.textContent = count + ' ' + labels[key] + (count!==1 && key!=='leakage'?'s':'');
     const tot = document.getElementById('rs-total-'+key);
     if(tot) tot.textContent = count;
   }
   // Sync checkbox visual state
-  ['sales','production','rawmats','expenses','attendance'].forEach(k=>{
+  ['sales','production','rawmats','expenses','attendance','leakage'].forEach(k=>{
     const chk = document.getElementById('reset-'+k);
     const chkEl = document.getElementById('reset-'+k+'-chk');
     if(chk && chkEl) chkEl.classList.toggle('on', chk.checked);
@@ -5562,7 +5711,7 @@ function toggleResetCheck(id){
 }
 
 function resetSelectAll(val){
-  ['sales','production','rawmats','expenses','attendance'].forEach(k=>{
+  ['sales','production','rawmats','expenses','attendance','leakage'].forEach(k=>{
     const chk = document.getElementById('reset-'+k);
     const chkEl = document.getElementById('reset-'+k+'-chk');
     if(chk) chk.checked = val;
@@ -5581,12 +5730,12 @@ function onResetConfirmInput(){
 
 function promptResetConfirm(){
   // Build summary of what will be deleted
-  const selected = ['sales','production','rawmats','expenses','attendance'].filter(k=>{
+  const selected = ['sales','production','rawmats','expenses','attendance','leakage'].filter(k=>{
     const chk = document.getElementById('reset-'+k);
     return chk && chk.checked;
   });
   if(!selected.length){ toast('Select at least one data type to clear','e'); return; }
-  const nameMap = {sales:'Sales',production:'Production batches',rawmats:'Raw material inventory',expenses:'Expenses',attendance:'Attendance records'};
+  const nameMap = {sales:'Sales',production:'Production batches',rawmats:'Raw material inventory',expenses:'Expenses',attendance:'Attendance records',leakage:'Factory leakage logs'};
   const list = selected.map(k=>`• ${nameMap[k]} (${DB[k==='attendance'?'attendance':k]?.length||0} records)`).join('\n');
   const sumEl = document.getElementById('reset-mo-summary');
   if(sumEl) sumEl.innerHTML = 'You are about to permanently delete:<br><br><span style="font-family:\'DM Mono\',monospace;font-size:12px;color:var(--red-m);line-height:2">'
@@ -5604,13 +5753,13 @@ async function executeReset(){
   btn.disabled = true;
   btn.innerHTML = '<i class="ti ti-loader"></i> Deleting…';
 
-  const selected = ['sales','production','rawmats','expenses','attendance'].filter(k=>{
+  const selected = ['sales','production','rawmats','expenses','attendance','leakage'].filter(k=>{
     const chk = document.getElementById('reset-'+k);
     return chk && chk.checked;
   });
 
   // Firebase collection names
-  const fbCollections = {sales:'sales', production:'production', rawmats:'rawmats', expenses:'expenses', attendance:'attendance'};
+  const fbCollections = {sales:'sales', production:'production', rawmats:'rawmats', expenses:'expenses', attendance:'attendance', leakage:'leakage'};
 
   for(const key of selected){
     // Delete from Firebase
@@ -5633,7 +5782,7 @@ async function executeReset(){
   onResetConfirmInput();
 
   // Re-render everything
-  updateExpPanel(); updateProdPanel(); renderRecentSales();
+  updateExpPanel(); updateProdPanel(); renderRecentSales(); renderRecentLeakage();
   updateRMPanel(); renderRawMat(''); renderInvSummary('');
   updateStockHint(); populateBatchSelect(); populateMatLotSelect();
   if(CU && (CU.role!=='staff'||canAccess('dash'))){ renderDash(); renderAS(''); renderAP(); renderAE(); renderAttAdmin(''); }
