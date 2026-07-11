@@ -1227,6 +1227,80 @@ table.dt tbody tr:hover td{background:var(--surf2);}
             <div class="r-lock" style="margin:0 1.2rem 1.2rem"><i class="ti ti-lock" style="font-size:11px"></i> Expense totals visible to admin only</div>
           </div>
         </div>
+
+        <!-- STAFF LOANS & CHARGES (admin/manager only) -->
+        <div class="admin-nav" style="display:none;margin-top:1.75rem">
+          <div class="ph" style="margin-bottom:1rem">
+            <div>
+              <div class="ph-title" style="font-size:16px"><i class="ti ti-cash-banknote" style="color:var(--grn-m)"></i> Staff loans &amp; charges</div>
+              <div class="ph-sub">Issue a cash loan/advance or a damage charge, then log partial repayments — including salary deductions — until it's settled. This automatically reconciles with expenses and net profit.</div>
+            </div>
+          </div>
+
+          <div class="pos">
+            <div class="pos-card">
+              <div class="pos-head"><div class="pos-head-ico" style="background:linear-gradient(135deg,#7a1c1c,#c03838)"><i class="ti ti-user-dollar"></i></div><div><h2>Issue loan or damage charge</h2><p>Select the staff member and record what they owe</p></div></div>
+              <div class="pos-body">
+                <div class="ok" id="loan-ok"><i class="ti ti-circle-check"></i> Logged!</div>
+                <div class="fg">
+                  <div class="field full">
+                    <label>Type</label>
+                    <div class="mpills" id="ln-type-pills">
+                      <button class="mpill sel" onclick="selLoanType('loan',this)"><i class="ti ti-cash"></i> Staff loan / advance</button>
+                      <button class="mpill" onclick="selLoanType('damage',this)"><i class="ti ti-alert-triangle"></i> Damage charge</button>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Date</label>
+                    <input type="date" id="ln-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('ln-date','ln-date-label')" onblur="hideDateInput('ln-date')">
+                    <button class="date-btn" id="ln-date-btn" type="button" onclick="showDateInput('ln-date')">
+                      <i class="ti ti-calendar"></i>
+                      <span class="db-label" id="ln-date-label">Today</span>
+                      <span class="db-change">tap to change</span>
+                    </button>
+                  </div>
+                  <div class="field">
+                    <label>Staff member</label>
+                    <select id="ln-staff"><option value="">— Select staff —</option></select>
+                  </div>
+                  <div class="field"><label>Amount (₦)</label><input type="number" id="ln-amount" placeholder="e.g. 15000" min="0"></div>
+                  <div class="field" id="ln-disburse-row"><label>Disbursed via</label>
+                    <select id="ln-disburse"><option>Cash</option><option>Transfer</option><option>POS</option></select>
+                  </div>
+                  <div class="field full"><label>Reason</label><input type="text" id="ln-reason" placeholder="e.g. Emergency advance, broke a packing machine part…"></div>
+                  <div class="field full"><label>Note (optional)</label><input type="text" id="ln-note" placeholder="Anything else to add…"></div>
+                </div>
+                <div id="ln-info-banner" style="background:var(--grn-xl);border:1.5px solid var(--grn-m);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.2rem;font-size:12px;color:var(--grn)">
+                  <i class="ti ti-info-circle"></i> This logs an expense now — cash is leaving the register for this loan.
+                </div>
+                <div class="f-actions">
+                  <button class="btn btn-primary" onclick="submitLoan()"><i class="ti ti-check"></i> Log loan/charge</button>
+                  <button class="btn btn-outline" onclick="clearLoanForm()"><i class="ti ti-refresh"></i> Clear</button>
+                </div>
+              </div>
+            </div>
+            <div class="receipt">
+              <div class="r-head"><h3><i class="ti ti-report-money" style="color:#4d9aff"></i> Staff loans summary</h3></div>
+              <div class="r-body">
+                <div class="srow"><span class="sl">Active loans/charges</span><span class="sv" id="ln-active-count">0</span></div>
+                <div class="srow"><span class="sl">Total outstanding</span><span class="sv" style="color:var(--red)" id="ln-total-outstanding">₦0</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="padding:0;overflow:hidden;margin-top:1.25rem;border-top:3px solid var(--brd)">
+            <div class="rs-head" style="background:var(--surf2);flex-wrap:wrap;gap:9px">
+              <div class="card-title" style="margin:0"><i class="ti ti-list-details" style="color:var(--grn-m)"></i> Staff loans &amp; charges</div>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--txt2);cursor:pointer">
+                <input type="checkbox" id="ln-show-settled" onchange="renderLoans()"> Show settled
+              </label>
+            </div>
+            <div class="tw"><table class="dt">
+              <thead><tr><th>Date</th><th>Staff</th><th>Type</th><th>Amount</th><th>Repaid</th><th>Outstanding</th><th>Status</th><th>Reason</th><th></th></tr></thead>
+              <tbody id="loans-tbody"><tr><td colspan="9"><div class="empty"><i class="ti ti-cash-banknote"></i><p>No staff loans or charges logged yet</p></div></td></tr></tbody>
+            </table></div>
+          </div>
+        </div>
       </div>
 
       <!-- MY SALES -->
@@ -1687,6 +1761,19 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <input type="checkbox" id="reset-leakage" style="display:none" checked>
               </label>
 
+              <label class="reset-check-row" onclick="toggleResetCheck('reset-loans')">
+                <div style="display:flex;align-items:center;gap:10px;flex:1">
+                  <div class="reset-check-icon" style="background:var(--red-l);color:var(--red-m)"><i class="ti ti-cash-banknote"></i></div>
+                  <div>
+                    <div style="font-size:13px;font-weight:500">Staff loans &amp; charges</div>
+                    <div style="font-size:11px;color:var(--txt3)" id="reset-loans-count">— records</div>
+                    <div style="font-size:10px;color:var(--txt3);margin-top:2px">Also reset Expenses to remove linked entries</div>
+                  </div>
+                </div>
+                <div class="reset-chk" id="reset-loans-chk"><i class="ti ti-check"></i></div>
+                <input type="checkbox" id="reset-loans" style="display:none" checked>
+              </label>
+
             </div>
 
             <div style="display:flex;gap:8px;margin-top:1.2rem">
@@ -1706,6 +1793,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Expenses</span><strong id="rs-total-expenses">—</strong></div>
                 <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Attendance records</span><strong id="rs-total-attendance">—</strong></div>
                 <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Factory leakage logs</span><strong id="rs-total-leakage">—</strong></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:var(--txt2)">Staff loans &amp; charges</span><strong id="rs-total-loans">—</strong></div>
               </div>
             </div>
 
@@ -1838,6 +1926,36 @@ table.dt tbody tr:hover td{background:var(--surf2);}
     <div style="display:flex;gap:9px">
       <button class="btn btn-primary btn-full" onclick="confirmAddMachine()"><i class="ti ti-check"></i> Add machine</button>
       <button class="btn btn-outline btn-full" onclick="closeAddMachineMo()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="mo" id="loan-repay-mo">
+  <div class="modal">
+    <div class="modal-hd"><span>Log repayment</span><button class="modal-x" onclick="closeLoanRepayMo()"><i class="ti ti-x"></i></button></div>
+    <div style="background:var(--surf2);border:1.5px solid var(--brd);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1.1rem;font-size:13px">
+      <div class="r-row"><span class="rl">Staff</span><span class="rv" id="lr-staff">—</span></div>
+      <div class="r-row"><span class="rl">Type</span><span class="rv" id="lr-type">—</span></div>
+      <div class="r-row"><span class="rl">Outstanding</span><span class="rv" id="lr-outstanding" style="color:var(--red)">₦0</span></div>
+    </div>
+    <div class="field full">
+      <label>Date</label>
+      <input type="date" id="lr-date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" onchange="dateChangeG('lr-date','lr-date-label')" onblur="hideDateInput('lr-date')">
+      <button class="date-btn" id="lr-date-btn" type="button" onclick="showDateInput('lr-date')">
+        <i class="ti ti-calendar"></i>
+        <span class="db-label" id="lr-date-label">Today</span>
+        <span class="db-change">tap to change</span>
+      </button>
+    </div>
+    <div class="field full"><label>Repayment amount (₦)</label><input type="number" id="lr-amount" placeholder="e.g. 5000" min="0"></div>
+    <div class="field full"><label>Method</label>
+      <select id="lr-method"><option>Cash</option><option>Transfer</option><option>POS</option><option>Salary deduction</option></select>
+    </div>
+    <div class="field full" style="margin-bottom:1.2rem"><label>Note (optional)</label><input type="text" id="lr-note" placeholder="e.g. Deducted from June salary"></div>
+    <div class="err" id="loan-repay-err" style="display:none;margin-bottom:1rem"><i class="ti ti-alert-circle"></i> <span id="loan-repay-err-msg"></span></div>
+    <div style="display:flex;gap:9px">
+      <button class="btn btn-primary btn-full" onclick="confirmLoanRepay()"><i class="ti ti-check"></i> Log repayment</button>
+      <button class="btn btn-outline btn-full" onclick="closeLoanRepayMo()">Cancel</button>
     </div>
   </div>
 </div>
@@ -1976,7 +2094,7 @@ const DB={
     {id:2,name:'Owner',username:'admin',password:'admin99',role:'admin',jobRole:'manager',active:true},
     {id:3,name:'Manager',username:'manager',password:'mgr456',role:'manager',jobRole:'manager',active:true},
   ],
-  sales:[],production:[],expenses:[],rawmats:[],reconciliations:[],attendance:[],prodcalc:[],leakage:[],
+  sales:[],production:[],expenses:[],rawmats:[],reconciliations:[],attendance:[],prodcalc:[],leakage:[],loans:[],
   _id:100,nid(){return++this._id;}
 };
 const MAT_CATS=[
@@ -2013,7 +2131,7 @@ const DR_CFG = {
 };
 let DR = {mysales:{from:null,to:null},dash:{from:null,to:null},asales:{from:null,to:null},aprod:{from:null,to:null},aexp:{from:null,to:null},pc:{from:null,to:null}};
 const EXP_CATS_BASE = ['Operator','Fuel','Repair','Driver','Maintenance','Equipment & Machinery',
-  'Labor & Staff','Logistics','Regulatory','Admin','Marketing','Security','Miscellaneous'];
+  'Labor & Staff','Logistics','Regulatory','Admin','Marketing','Security','Staff Loan/Advance','Miscellaneous'];
 // Custom expense categories (persisted in localStorage, loaded at startup)
 let CUSTOM_EXP_CATS = (function(){ try{ const r=localStorage.getItem('xcel_exp_cats'); return r?JSON.parse(r):[]; }catch(e){ return []; } })();
 // Machines list (admin-managed, persisted in localStorage)
@@ -2268,6 +2386,7 @@ function finaliseLogin(user){
   setDates();
   populateExpCats();
   populateUprMachineSelect();
+  populateLoanStaffSelect();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
   resetRollRows();
   applyUserPermissionsToNav(CU);
@@ -2275,7 +2394,7 @@ function finaliseLogin(user){
   const firstPage = ALL_PAGES.find(p=>CU.permissions.pages[p.key]);
   const firstNav = firstPage ? document.getElementById('nav-'+firstPage.key) : document.getElementById('nav-sale');
   goPage(firstPage?firstPage.key:'sale', firstNav);
-  updateExpPanel();updateProdPanel();renderRecentSales();renderRecentLeakage();
+  updateExpPanel();updateProdPanel();renderRecentSales();renderRecentLeakage();renderLoans();
   updateRMPanel();renderRawMat('');renderInvSummary('');updateRmAltIdPreview();
   updateStockHint();
 
@@ -2324,7 +2443,7 @@ async function loadFromFirebase(){
   }
   toast('Syncing data…','');
   try{
-    const cols=['sales','production','expenses','rawmats','prodcalc','users','attendance','leakage'];
+    const cols=['sales','production','expenses','rawmats','prodcalc','users','attendance','leakage','loans'];
     for(const col of cols){
       const snap=await fsGetDocs(fsCol(col));
       snap.forEach(d=>{
@@ -2349,7 +2468,7 @@ async function loadFromFirebase(){
       });
     }
     // Re-render everything with fresh data
-    updateExpPanel();updateProdPanel();renderRecentSales();renderRecentLeakage();
+    updateExpPanel();updateProdPanel();renderRecentSales();renderRecentLeakage();renderLoans();
     updateRMPanel();renderRawMat('');renderInvSummary('');
     updateStockHint();populateBatchSelect();populateMatLotSelect();
     populateUprBatchSelect();onUprBatchChange();renderUprHistory();
@@ -4517,13 +4636,216 @@ function updateExpPanel(){
   document.getElementById('e-count').textContent=DB.expenses.length;
   document.getElementById('e-total').textContent='₦'+total.toLocaleString();
   const cats={};DB.expenses.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.amount;});
-  const CC={Operator:'#7F77DD',Fuel:'#1D9E75',Repair:'#c03838',Driver:'#c08a18',Maintenance:'#2d58c2','Equipment & Machinery':'#888'};
+  const CC={Operator:'#7F77DD',Fuel:'#1D9E75',Repair:'#c03838',Driver:'#c08a18',Maintenance:'#2d58c2','Equipment & Machinery':'#888','Staff Loan/Advance':'#7a1c1c'};
   const max=Math.max(...Object.values(cats),1);
   document.getElementById('e-cats').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([k,v])=>`
     <div class="prog-wrap"><span class="prog-lbl" style="color:${CC[k]||'#888'};min-width:85px">${k}</span>
     <div class="prog-bg"><div class="prog-fill" style="width:${Math.round(v/max*100)}%;background:${CC[k]||'#888'}"></div></div>
     <span class="prog-val">₦${(v/1000).toFixed(1)}k</span></div>`).join('');
 }
+
+/* =============================================
+   STAFF LOANS & CHARGES — cash advances and damage charges, with
+   partial repayments (cash, transfer, POS, or salary deduction) that
+   automatically reconcile against Expenses/net profit via linked entries.
+   ============================================= */
+let lnType='loan';
+let pendingRepayLoanId=null;
+
+function populateLoanStaffSelect(){
+  const sel=document.getElementById('ln-staff');
+  if(!sel) return;
+  const prev=sel.value;
+  const staffList=DB.users.filter(u=>u.active);
+  sel.innerHTML='<option value="">— Select staff —</option>'+staffList.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  if(prev && staffList.some(u=>String(u.id)===prev)) sel.value=prev;
+}
+
+function selLoanType(t, el){
+  lnType=t;
+  document.querySelectorAll('#ln-type-pills .mpill').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  const disburseRow=document.getElementById('ln-disburse-row');
+  if(disburseRow) disburseRow.style.display = t==='loan' ? '' : 'none';
+  const banner=document.getElementById('ln-info-banner');
+  if(!banner) return;
+  if(t==='loan'){
+    banner.style.background='var(--grn-xl)'; banner.style.borderColor='var(--grn-m)'; banner.style.color='var(--grn)';
+    banner.innerHTML='<i class="ti ti-info-circle"></i> This logs an expense now — cash is leaving the register for this loan.';
+  } else {
+    banner.style.background='var(--amb-l)'; banner.style.borderColor='#e8c97a'; banner.style.color='var(--amb)';
+    banner.innerHTML='<i class="ti ti-info-circle"></i> No cash moves now — this only records what the staff member owes. Repayments will show as they pay it back.';
+  }
+}
+
+function submitLoan(){
+  const date     = document.getElementById('ln-date').value || TODAY;
+  const staffId  = document.getElementById('ln-staff').value;
+  const amount   = parseFloat(document.getElementById('ln-amount').value);
+  const reason   = document.getElementById('ln-reason').value.trim();
+  const note     = document.getElementById('ln-note').value;
+  const disburse = document.getElementById('ln-disburse').value;
+
+  if(!staffId){ toast('Select a staff member','e'); return; }
+  if(!amount || amount<=0){ toast('Enter an amount','e'); return; }
+  if(!reason){ toast('Enter a reason','e'); return; }
+
+  const staffUser = DB.users.find(u=>String(u.id)===String(staffId));
+  const staffName = staffUser ? staffUser.name : 'Unknown';
+
+  const id = DB.nid();
+  const loan = { id, date, staffId, staffName, type:lnType, amount, reason, note, loggedBy:CU.name, loggedById:CU.id, repayments:[] };
+
+  // A cash loan/advance leaves the register now — log it as an expense.
+  // A damage charge is only a liability owed by staff — no cash moves at issuance.
+  if(lnType==='loan'){
+    const expId = DB.nid();
+    const exp = { id:expId, date, cat:'Staff Loan/Advance', desc:'Staff loan/advance — '+staffName+(reason?': '+reason:''), amount, paid:disburse, note, staff:CU.name, staffId:CU.id, loanId:id, loanKind:'issue' };
+    DB.expenses.push(exp);
+    loan.expenseId = expId;
+    if(window.fsReady){
+      const clean=Object.fromEntries(Object.entries(exp).filter(([,v])=>v!==undefined));
+      fsAddDoc(fsCol('expenses'), clean).then(ref=>{ exp._fbId=ref.id; }).catch(e=>console.warn('FS loan expense write:',e));
+    }
+  }
+
+  DB.loans.push(loan);
+  if(window.fsReady){
+    const clean=Object.fromEntries(Object.entries(loan).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('loans'), clean).then(ref=>{ loan._fbId=ref.id; }).catch(e=>console.warn('FS loan write:',e));
+  }
+
+  showOk('loan-ok'); clearLoanForm(); toast((lnType==='loan'?'Staff loan':'Damage charge')+' logged ✓','s');
+  renderLoans();
+  updateExpPanel();
+}
+
+function clearLoanForm(){
+  ['ln-amount','ln-reason','ln-note'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const staffSel=document.getElementById('ln-staff'); if(staffSel) staffSel.value='';
+  const dateEl=document.getElementById('ln-date'); if(dateEl) dateEl.value='';
+  const dateLbl=document.getElementById('ln-date-label'); if(dateLbl) dateLbl.textContent='Today';
+  const disburseEl=document.getElementById('ln-disburse'); if(disburseEl) disburseEl.value='Cash';
+  const firstPill=document.querySelector('#ln-type-pills .mpill');
+  if(firstPill) selLoanType('loan', firstPill);
+}
+
+function loanRepaid(loan){ return (loan.repayments||[]).reduce((a,r)=>a+(r.amount||0),0); }
+function loanOutstanding(loan){ return Math.max(0,(loan.amount||0)-loanRepaid(loan)); }
+
+function renderLoans(){
+  const tb=document.getElementById('loans-tbody');
+  if(!tb) return;
+  const showSettled = document.getElementById('ln-show-settled')?.checked;
+  const rows = DB.loans.filter(l=> showSettled || loanOutstanding(l) > 0).slice().reverse();
+
+  const active = DB.loans.filter(l=>loanOutstanding(l) > 0);
+  const totalOutstanding = active.reduce((a,l)=>a+loanOutstanding(l),0);
+  const activeCountEl=document.getElementById('ln-active-count'); if(activeCountEl) activeCountEl.textContent=active.length;
+  const totalOutEl=document.getElementById('ln-total-outstanding'); if(totalOutEl) totalOutEl.textContent='₦'+totalOutstanding.toLocaleString();
+
+  if(!rows.length){
+    tb.innerHTML = '<tr><td colspan="9"><div class="empty"><i class="ti ti-cash-banknote"></i><p>No staff loans or charges logged yet</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML = rows.map(l=>{
+    const outstanding = loanOutstanding(l);
+    const repaid = loanRepaid(l);
+    const settled = outstanding <= 0;
+    const typeBadge = l.type==='loan' ? '<span class="badge bt">Loan</span>' : '<span class="badge br">Damage</span>';
+    const statusBadge = settled ? '<span class="badge bg">Settled</span>' : '<span class="badge" style="background:#fff3cd;color:#8a6d1a">Active</span>';
+    return `<tr ${settled?'style="opacity:.6"':''}>
+      <td>${fmtDate(l.date)}</td>
+      <td>${l.staffName}</td>
+      <td>${typeBadge}</td>
+      <td style="font-weight:600">₦${l.amount.toLocaleString()}</td>
+      <td style="color:var(--grn)">₦${repaid.toLocaleString()}</td>
+      <td style="font-weight:600;color:${settled?'var(--grn)':'var(--red-m)'}">₦${outstanding.toLocaleString()}</td>
+      <td>${statusBadge}</td>
+      <td style="color:var(--txt3);font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.reason||'—'}</td>
+      <td style="display:flex;gap:5px;white-space:nowrap">${settled?'':`<button class="btn btn-outline btn-sm" onclick="promptLoanRepay(${l.id})"><i class="ti ti-cash"></i> Repay</button>`}${(l.repayments||[]).length===0?`<button class="btn btn-danger btn-sm" onclick="promptDeleteLoan(${l.id})"><i class="ti ti-trash"></i></button>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function promptLoanRepay(loanId){
+  const loan = DB.loans.find(l=>l.id===loanId);
+  if(!loan) return;
+  pendingRepayLoanId = loanId;
+  document.getElementById('lr-staff').textContent = loan.staffName;
+  document.getElementById('lr-type').textContent = loan.type==='loan' ? 'Staff loan/advance' : 'Damage charge';
+  document.getElementById('lr-outstanding').textContent = '₦'+loanOutstanding(loan).toLocaleString();
+  document.getElementById('lr-amount').value='';
+  document.getElementById('lr-note').value='';
+  document.getElementById('lr-method').value='Cash';
+  document.getElementById('lr-date').value='';
+  document.getElementById('lr-date-label').textContent='Today';
+  document.getElementById('loan-repay-err').style.display='none';
+  document.getElementById('loan-repay-mo').classList.add('open');
+}
+function closeLoanRepayMo(){
+  document.getElementById('loan-repay-mo').classList.remove('open');
+  pendingRepayLoanId=null;
+}
+function confirmLoanRepay(){
+  const loan = DB.loans.find(l=>l.id===pendingRepayLoanId);
+  const errEl = document.getElementById('loan-repay-err');
+  const errMsg = document.getElementById('loan-repay-err-msg');
+  if(!loan){ closeLoanRepayMo(); return; }
+
+  const date     = document.getElementById('lr-date').value || TODAY;
+  const amount   = parseFloat(document.getElementById('lr-amount').value);
+  const method   = document.getElementById('lr-method').value;
+  const note     = document.getElementById('lr-note').value;
+  const outstanding = loanOutstanding(loan);
+
+  if(!amount || amount<=0){ errMsg.textContent='Enter a repayment amount'; errEl.style.display='flex'; return; }
+  if(amount > outstanding){ errMsg.textContent='Cannot repay more than the outstanding balance (₦'+outstanding.toLocaleString()+')'; errEl.style.display='flex'; return; }
+
+  const repaymentId = DB.nid();
+  const repayment = { id:repaymentId, date, amount, method, note, loggedBy:CU.name, loggedById:CU.id };
+  if(!loan.repayments) loan.repayments=[];
+  loan.repayments.push(repayment);
+
+  // ── Credit expense entry — reduces net expenses / increases profit as the loan is repaid ──
+  const expId = DB.nid();
+  const exp = { id:expId, date, cat:'Staff Loan/Advance', desc:'Loan repayment — '+loan.staffName+(note?': '+note:''), amount:-amount, paid:method, note, staff:CU.name, staffId:CU.id, loanId:loan.id, loanKind:'repayment' };
+  DB.expenses.push(exp);
+
+  if(window.fsReady){
+    const cleanExp=Object.fromEntries(Object.entries(exp).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('expenses'), cleanExp).then(ref=>{ exp._fbId=ref.id; }).catch(e=>console.warn('FS repayment expense write:',e));
+    if(loan._fbId){
+      const cleanLoan=Object.fromEntries(Object.entries(loan).filter(([,v])=>v!==undefined));
+      fsUpdateDoc(fsDoc('loans', loan._fbId), cleanLoan).catch(e=>console.warn('FS loan update:',e));
+    }
+  }
+
+  closeLoanRepayMo();
+  toast('Repayment logged ✓','s');
+  renderLoans();
+  updateExpPanel();
+}
+
+function promptDeleteLoan(loanId){
+  const loan = DB.loans.find(l=>l.id===loanId);
+  if(!loan) return;
+  if((loan.repayments||[]).length>0){ toast('Cannot delete a loan that already has repayments logged','e'); return; }
+  if(!confirm('Delete this loan/charge record? This cannot be undone.')) return;
+  if(loan.expenseId){
+    const linkedExp = DB.expenses.find(e=>e.id===loan.expenseId);
+    if(linkedExp){
+      if(window.fsReady && linkedExp._fbId) fsDeleteDoc(fsDoc('expenses', linkedExp._fbId)).catch(e=>console.warn('FS delete:',e));
+      DB.expenses = DB.expenses.filter(e=>e.id!==loan.expenseId);
+    }
+  }
+  if(window.fsReady && loan._fbId) fsDeleteDoc(fsDoc('loans', loan._fbId)).catch(e=>console.warn('FS delete:',e));
+  DB.loans = DB.loans.filter(l=>l.id!==loanId);
+  toast('Loan/charge deleted','s');
+  renderLoans();
+  updateExpPanel();
+}
+
 
 /* =============================================
    PRODUCTION CALCULATOR — KG used vs bags produced, division (yield) tracking
@@ -4887,13 +5209,13 @@ function renderAP(){
 /* ALL EXPENSES */
 function renderAE(){
   const d=DB.expenses.filter(e=>inDR('aexp',e.date));const tb=document.getElementById('ae-tbody');
-  const BC={Operator:'bb',Fuel:'bt',Repair:'br',Driver:'ba',Maintenance:'bb','Equipment & Machinery':'bt'};
+  const BC={Operator:'bb',Fuel:'bt',Repair:'br',Driver:'ba',Maintenance:'bb','Equipment & Machinery':'bt','Staff Loan/Advance':'br'};
   if(!d.length){tb.innerHTML='<tr><td colspan="8"><div class="empty"><i class="ti ti-receipt-2"></i><p>No expenses yet</p></div></td></tr>';return;}
   tb.innerHTML=d.slice().reverse().map(e=>`<tr>
     <td>${fmtDate(e.date)}</td>
     <td><span class="badge ${BC[e.cat]||'bb'}">${e.cat}</span></td>
     <td>${e.desc}</td>
-    <td style="font-weight:600">₦${e.amount.toLocaleString()}</td>
+    <td style="font-weight:600;color:${e.amount<0?'var(--grn)':'inherit'}">${e.amount<0?'−':''}₦${Math.abs(e.amount).toLocaleString()}</td>
     <td>${e.paid}</td><td>${e.staff}</td>
     <td style="color:var(--txt3);font-size:12px">${e.note||'—'}</td>
     <td><button class="btn btn-danger btn-sm" onclick="promptDel('expenses',${e.id})"><i class="ti ti-trash"></i></button></td>
@@ -5349,6 +5671,7 @@ function addUser(){
   document.getElementById('user-ok').classList.add('show');
   setTimeout(()=>document.getElementById('user-ok').classList.remove('show'),3000);
   renderUsers();
+  populateLoanStaffSelect();
 }
 
 function toggleUser(id){
@@ -5359,6 +5682,7 @@ function toggleUser(id){
       fsUpdateDoc(fsDoc('users', u._fbId), {active:u.active}).catch(e=>console.warn('FS user update:',e));
     }
     renderUsers();
+    populateLoanStaffSelect();
   }
 }
 
@@ -5685,9 +6009,10 @@ function renderResetPage(){
     expenses: DB.expenses.length,
     attendance: (DB.attendance||[]).length,
     leakage: (DB.leakage||[]).length,
+    loans: (DB.loans||[]).length,
   };
   // Update count labels on checkboxes
-  const labels = {sales:'sale', production:'batch', rawmats:'lot', expenses:'expense', attendance:'record', leakage:'leakage log'};
+  const labels = {sales:'sale', production:'batch', rawmats:'lot', expenses:'expense', attendance:'record', leakage:'leakage log', loans:'loan/charge'};
   for(const [key, count] of Object.entries(counts)){
     const el = document.getElementById('reset-'+key+'-count');
     if(el) el.textContent = count + ' ' + labels[key] + (count!==1 && key!=='leakage'?'s':'');
@@ -5695,7 +6020,7 @@ function renderResetPage(){
     if(tot) tot.textContent = count;
   }
   // Sync checkbox visual state
-  ['sales','production','rawmats','expenses','attendance','leakage'].forEach(k=>{
+  ['sales','production','rawmats','expenses','attendance','leakage','loans'].forEach(k=>{
     const chk = document.getElementById('reset-'+k);
     const chkEl = document.getElementById('reset-'+k+'-chk');
     if(chk && chkEl) chkEl.classList.toggle('on', chk.checked);
@@ -5711,7 +6036,7 @@ function toggleResetCheck(id){
 }
 
 function resetSelectAll(val){
-  ['sales','production','rawmats','expenses','attendance','leakage'].forEach(k=>{
+  ['sales','production','rawmats','expenses','attendance','leakage','loans'].forEach(k=>{
     const chk = document.getElementById('reset-'+k);
     const chkEl = document.getElementById('reset-'+k+'-chk');
     if(chk) chk.checked = val;
@@ -5730,12 +6055,12 @@ function onResetConfirmInput(){
 
 function promptResetConfirm(){
   // Build summary of what will be deleted
-  const selected = ['sales','production','rawmats','expenses','attendance','leakage'].filter(k=>{
+  const selected = ['sales','production','rawmats','expenses','attendance','leakage','loans'].filter(k=>{
     const chk = document.getElementById('reset-'+k);
     return chk && chk.checked;
   });
   if(!selected.length){ toast('Select at least one data type to clear','e'); return; }
-  const nameMap = {sales:'Sales',production:'Production batches',rawmats:'Raw material inventory',expenses:'Expenses',attendance:'Attendance records',leakage:'Factory leakage logs'};
+  const nameMap = {sales:'Sales',production:'Production batches',rawmats:'Raw material inventory',expenses:'Expenses',attendance:'Attendance records',leakage:'Factory leakage logs',loans:'Staff loans & charges'};
   const list = selected.map(k=>`• ${nameMap[k]} (${DB[k==='attendance'?'attendance':k]?.length||0} records)`).join('\n');
   const sumEl = document.getElementById('reset-mo-summary');
   if(sumEl) sumEl.innerHTML = 'You are about to permanently delete:<br><br><span style="font-family:\'DM Mono\',monospace;font-size:12px;color:var(--red-m);line-height:2">'
@@ -5753,13 +6078,13 @@ async function executeReset(){
   btn.disabled = true;
   btn.innerHTML = '<i class="ti ti-loader"></i> Deleting…';
 
-  const selected = ['sales','production','rawmats','expenses','attendance','leakage'].filter(k=>{
+  const selected = ['sales','production','rawmats','expenses','attendance','leakage','loans'].filter(k=>{
     const chk = document.getElementById('reset-'+k);
     return chk && chk.checked;
   });
 
   // Firebase collection names
-  const fbCollections = {sales:'sales', production:'production', rawmats:'rawmats', expenses:'expenses', attendance:'attendance', leakage:'leakage'};
+  const fbCollections = {sales:'sales', production:'production', rawmats:'rawmats', expenses:'expenses', attendance:'attendance', leakage:'leakage', loans:'loans'};
 
   for(const key of selected){
     // Delete from Firebase
@@ -5782,7 +6107,7 @@ async function executeReset(){
   onResetConfirmInput();
 
   // Re-render everything
-  updateExpPanel(); updateProdPanel(); renderRecentSales(); renderRecentLeakage();
+  updateExpPanel(); updateProdPanel(); renderRecentSales(); renderRecentLeakage(); renderLoans();
   updateRMPanel(); renderRawMat(''); renderInvSummary('');
   updateStockHint(); populateBatchSelect(); populateMatLotSelect();
   if(CU && (CU.role!=='staff'||canAccess('dash'))){ renderDash(); renderAS(''); renderAP(); renderAE(); renderAttAdmin(''); }
