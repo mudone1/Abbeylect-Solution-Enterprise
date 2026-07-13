@@ -1356,6 +1356,26 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           <div class="mc b"><div class="mc-ico"><i class="ti ti-box-seam"></i></div><div class="mc-lbl">Material cost</div><div class="mc-val" id="d-matcost">₦0</div><div class="mc-sub">raw materials used</div></div>
           <div class="mc g"><div class="mc-ico"><i class="ti ti-chart-line"></i></div><div class="mc-lbl">Gross profit</div><div class="mc-val" id="d-gross-profit">₦0</div><div class="mc-sub">rev − material cost</div></div>
           <div class="mc g"><div class="mc-ico"><i class="ti ti-trending-up"></i></div><div class="mc-lbl">Net profit</div><div class="mc-val" id="d-profit">₦0</div><div class="mc-sub">rev − costs</div></div>
+          <div class="mc t"><div class="mc-ico"><i class="ti ti-wallet"></i></div><div class="mc-lbl">Cash balance</div><div class="mc-val" id="d-cash-balance">₦0</div><div class="mc-sub">revenue − expenses (what's left in hand)</div></div>
+        </div>
+
+        <!-- FINISHED GOODS STOCK -->
+        <div style="font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;margin-top:.2rem;display:flex;align-items:center;gap:6px"><i class="ti ti-packages" style="font-size:13px;color:#1a5fcb"></i> Finished Goods — Bag Inventory <span style="font-weight:400;text-transform:none;color:var(--txt3);letter-spacing:0">(all-time, not affected by the date filter above)</span></div>
+        <div class="mrow" style="margin-top:0;margin-bottom:.5rem">
+          <div class="mc b"><div class="mc-ico"><i class="ti ti-packages"></i></div><div class="mc-lbl">Total produced</div><div class="mc-val" id="d-stk-produced">0</div><div class="mc-sub">bags, all time</div></div>
+          <div class="mc t"><div class="mc-ico"><i class="ti ti-shopping-cart"></i></div><div class="mc-lbl">Sold / dispatched</div><div class="mc-val" id="d-stk-sold">0</div><div class="mc-sub">walk-in + supply trips</div></div>
+          <div class="mc r"><div class="mc-ico"><i class="ti ti-droplet-off"></i></div><div class="mc-lbl">Factory leakage</div><div class="mc-val" id="d-stk-leak">0</div><div class="mc-sub">logged leakage/waste</div></div>
+          <div class="mc a"><div class="mc-ico"><i class="ti ti-gift"></i></div><div class="mc-lbl">Extra given + leakage exch.</div><div class="mc-val" id="d-stk-extra">0</div><div class="mc-sub">bonus bags &amp; road leakage swaps</div></div>
+          <div class="mc g"><div class="mc-ico"><i class="ti ti-archive"></i></div><div class="mc-lbl">Remaining in stock</div><div class="mc-val" id="d-stk-remaining">0</div><div class="mc-sub">bags available now</div></div>
+        </div>
+        <div class="card card-sm" style="margin-bottom:1.1rem;padding:0;overflow:hidden">
+          <div style="padding:.75rem 1.2rem;background:var(--surf2);border-bottom:1.5px solid var(--brd)">
+            <div class="card-title" style="margin:0"><i class="ti ti-archive" style="color:#1a5fcb"></i> Stock by product</div>
+          </div>
+          <div class="tw"><table class="dt">
+            <thead><tr><th>Product</th><th>Produced</th><th>Sold/Dispatched</th><th>Factory leakage</th><th>Extra given</th><th>Leakage exch.</th><th>Remaining</th></tr></thead>
+            <tbody id="d-stock-tbody"></tbody>
+          </table></div>
         </div>
 
         <!-- DRIVER SALES ANALYSIS -->
@@ -3124,6 +3144,34 @@ function updateR(){
    PRODUCTION STOCK CHECK
    Returns available bags = total produced for a product minus total already sold/dispatched
    ============================================= */
+const PRODUCT_TYPES = ['Pure water 50CL','Dispenser water','Bottle water 50CL'];
+
+/* Full breakdown of a product's finished-goods stock (all-time, independent of any dashboard date filter) */
+function getProductStockBreakdown(product){
+  const produced = DB.production
+    .filter(p => p.type === product)
+    .reduce((a, p) => a + (p.qty || 0), 0);
+  const activeSales = DB.sales.filter(s => !s.voided && s.product === product);
+  const walkinSold = activeSales
+    .filter(s => s.type === 'walkin')
+    .reduce((a, s) => a + (s.qty || 0) + (s.exchange || 0), 0);
+  const supplyDispatched = activeSales
+    .filter(s => s.type === 'supply')
+    .reduce((a, s) => a + (s.carried || 0) + (s.extra || 0), 0);
+  const extraGiven = activeSales
+    .filter(s => s.type === 'supply')
+    .reduce((a, s) => a + (s.damaged || 0), 0); // "Extra Quantity" — bonus bags given to customers
+  const leakExTotal = activeSales
+    .filter(s => s.type === 'supply')
+    .reduce((a, s) => a + (s.leakEx || 0), 0); // leakage exchanged on the road, tracked per supply trip
+  const factoryLeak = DB.leakage
+    .filter(l => l.product === product)
+    .reduce((a, l) => a + (l.qty || 0), 0);
+  const sold = walkinSold + supplyDispatched + extraGiven + leakExTotal;
+  const remaining = Math.max(0, produced - sold - factoryLeak);
+  return {produced, sold, factoryLeak, extraGiven, leakExTotal, remaining};
+}
+
 function getAvailableBagsForSale(product){
   const produced = DB.production
     .filter(p => p.type === product)
@@ -3132,7 +3180,11 @@ function getAvailableBagsForSale(product){
     .filter(s => !s.voided && s.product === product)
     .reduce((a, s) => {
       if(s.type === 'walkin') return a + (s.qty || 0) + (s.exchange || 0);
-      if(s.type === 'supply') return a + (s.carried || 0) + (s.extra || 0); // carried+extra = bags dispatched on the going leg
+      // Supply trips: bags physically leave the factory when dispatched (going leg).
+      // At completion, carried/extra get adjusted down by Extra Quantity (bonus bags given)
+      // and Leakage Exchanged so the "sellable" math works — but those adjusted-away bags
+      // still left the factory and must stay deducted from stock, so add damaged+leakEx back.
+      if(s.type === 'supply') return a + (s.carried || 0) + (s.extra || 0) + (s.damaged || 0) + (s.leakEx || 0);
       return a;
     }, 0);
   const leaked = DB.leakage
@@ -5248,7 +5300,40 @@ function renderDash(){
     document.getElementById('d-gross-profit').closest('.mc').className='mc '+(grossProfit>=0?'g':'r');
   }
   document.getElementById('d-profit').textContent=(profit>=0?'₦':'-₦')+Math.abs(profit).toLocaleString();
-  document.querySelector('#page-dash .mc:last-child').className='mc '+(profit>=0?'g':'r');
+
+  /* Cash balance — what's actually left in hand after expenses (no material-cost deduction) */
+  const cashBalance = rev - exp;
+  const cashBalEl = document.getElementById('d-cash-balance');
+  if(cashBalEl){
+    cashBalEl.textContent = (cashBalance>=0?'₦':'-₦')+Math.abs(cashBalance).toLocaleString();
+    cashBalEl.closest('.mc').className = 'mc '+(cashBalance>=0?'t':'r');
+  }
+
+  /* ── Finished goods stock (all-time, independent of the dash date filter) ── */
+  const stockRows = PRODUCT_TYPES.map(p => ({product:p, ...getProductStockBreakdown(p)}));
+  const stkTotals = stockRows.reduce((a,r)=>({
+    produced:a.produced+r.produced, sold:a.sold+r.sold, factoryLeak:a.factoryLeak+r.factoryLeak,
+    extraGiven:a.extraGiven+r.extraGiven, leakExTotal:a.leakExTotal+r.leakExTotal, remaining:a.remaining+r.remaining
+  }), {produced:0,sold:0,factoryLeak:0,extraGiven:0,leakExTotal:0,remaining:0});
+  const _stk = id => document.getElementById(id);
+  if(_stk('d-stk-produced'))  _stk('d-stk-produced').textContent  = stkTotals.produced.toLocaleString();
+  if(_stk('d-stk-sold'))      _stk('d-stk-sold').textContent      = stkTotals.sold.toLocaleString();
+  if(_stk('d-stk-leak'))      _stk('d-stk-leak').textContent      = stkTotals.factoryLeak.toLocaleString();
+  if(_stk('d-stk-extra'))     _stk('d-stk-extra').textContent     = (stkTotals.extraGiven+stkTotals.leakExTotal).toLocaleString();
+  if(_stk('d-stk-remaining')) _stk('d-stk-remaining').textContent = stkTotals.remaining.toLocaleString();
+  const stkTb = _stk('d-stock-tbody');
+  if(stkTb){
+    stkTb.innerHTML = stockRows.map(r => `<tr>
+      <td style="font-weight:600">${r.product}</td>
+      <td style="font-family:'DM Mono',monospace">${r.produced.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace">${r.sold.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--red-m)">${r.factoryLeak.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--amb)">${r.extraGiven.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--amb)">${r.leakExTotal.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:700;color:${r.remaining>0?'var(--grn)':'var(--red-m)'}">${r.remaining.toLocaleString()}</td>
+    </tr>`).join('');
+  }
+  document.getElementById('d-profit').closest('.mc').className='mc '+(profit>=0?'g':'r');
 
   /* ── Driver Sales Analysis ── */
   const supplySales = activeSales.filter(s => s.type === 'supply');
