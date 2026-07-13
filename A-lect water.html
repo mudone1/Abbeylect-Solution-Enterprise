@@ -1378,6 +1378,17 @@ table.dt tbody tr:hover td{background:var(--surf2);}
           </table></div>
         </div>
 
+        <div style="font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px"><i class="ti ti-calendar-stats" style="font-size:13px;color:#c08a18"></i> Stock Movement <span style="font-weight:400;text-transform:none;color:var(--txt3);letter-spacing:0">(follows the date filter above — shows what moved in/out during that period)</span></div>
+        <div class="card card-sm" style="margin-bottom:1.1rem;padding:0;overflow:hidden">
+          <div style="padding:.75rem 1.2rem;background:var(--surf2);border-bottom:1.5px solid var(--brd)">
+            <div class="card-title" style="margin:0"><i class="ti ti-calendar-stats" style="color:#c08a18"></i> Stock movement by product — selected period</div>
+          </div>
+          <div class="tw"><table class="dt">
+            <thead><tr><th>Product</th><th>Produced</th><th>Sold/Dispatched</th><th>Factory leakage</th><th>Extra given</th><th>Leakage exch.</th><th>Net change</th></tr></thead>
+            <tbody id="d-stockmv-tbody"></tbody>
+          </table></div>
+        </div>
+
         <!-- DRIVER SALES ANALYSIS -->
         <div style="font-size:9.5px;font-weight:700;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;margin-top:.2rem;display:flex;align-items:center;gap:6px"><i class="ti ti-truck-delivery" style="font-size:13px;color:#c08a18"></i> Driver Sales Analysis</div>
         <div class="mrow" style="margin-top:0;margin-bottom:.5rem">
@@ -3170,6 +3181,33 @@ function getProductStockBreakdown(product){
   const sold = walkinSold + supplyDispatched + extraGiven + leakExTotal;
   const remaining = Math.max(0, produced - sold - factoryLeak);
   return {produced, sold, factoryLeak, extraGiven, leakExTotal, remaining};
+}
+
+/* Same breakdown as getProductStockBreakdown, but restricted to the dashboard's selected date range —
+   shows stock MOVEMENT during that period, not the running all-time balance. */
+function getProductStockMovement(product){
+  const produced = DB.production
+    .filter(p => p.type === product && inDR('dash', p.date))
+    .reduce((a, p) => a + (p.qty || 0), 0);
+  const activeSales = DB.sales.filter(s => !s.voided && s.product === product && inDR('dash', s.date));
+  const walkinSold = activeSales
+    .filter(s => s.type === 'walkin')
+    .reduce((a, s) => a + (s.qty || 0) + (s.exchange || 0), 0);
+  const supplyDispatched = activeSales
+    .filter(s => s.type === 'supply')
+    .reduce((a, s) => a + (s.carried || 0) + (s.extra || 0), 0);
+  const extraGiven = activeSales
+    .filter(s => s.type === 'supply')
+    .reduce((a, s) => a + (s.damaged || 0), 0);
+  const leakExTotal = activeSales
+    .filter(s => s.type === 'supply')
+    .reduce((a, s) => a + (s.leakEx || 0), 0);
+  const factoryLeak = DB.leakage
+    .filter(l => l.product === product && inDR('dash', l.date))
+    .reduce((a, l) => a + (l.qty || 0), 0);
+  const sold = walkinSold + supplyDispatched + extraGiven + leakExTotal;
+  const netChange = produced - sold - factoryLeak;
+  return {produced, sold, factoryLeak, extraGiven, leakExTotal, netChange};
 }
 
 function getAvailableBagsForSale(product){
@@ -5331,6 +5369,21 @@ function renderDash(){
       <td style="font-family:'DM Mono',monospace;color:var(--amb)">${r.extraGiven.toLocaleString()}</td>
       <td style="font-family:'DM Mono',monospace;color:var(--amb)">${r.leakExTotal.toLocaleString()}</td>
       <td style="font-family:'DM Mono',monospace;font-weight:700;color:${r.remaining>0?'var(--grn)':'var(--red-m)'}">${r.remaining.toLocaleString()}</td>
+    </tr>`).join('');
+  }
+
+  /* ── Stock movement — same breakdown but scoped to the dashboard's selected date range ── */
+  const stockMvRows = PRODUCT_TYPES.map(p => ({product:p, ...getProductStockMovement(p)}));
+  const stockMvTb = _stk('d-stockmv-tbody');
+  if(stockMvTb){
+    stockMvTb.innerHTML = stockMvRows.map(r => `<tr>
+      <td style="font-weight:600">${r.product}</td>
+      <td style="font-family:'DM Mono',monospace">${r.produced.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace">${r.sold.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--red-m)">${r.factoryLeak.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--amb)">${r.extraGiven.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--amb)">${r.leakExTotal.toLocaleString()}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:700;color:${r.netChange>=0?'var(--grn)':'var(--red-m)'}">${r.netChange>=0?'+':''}${r.netChange.toLocaleString()}</td>
     </tr>`).join('');
   }
   document.getElementById('d-profit').closest('.mc').className='mc '+(profit>=0?'g':'r');
