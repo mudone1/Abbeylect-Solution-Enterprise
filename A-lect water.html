@@ -455,6 +455,50 @@ table.dt tbody tr:hover td{background:var(--surf2);}
 
 /* ATTENDANCE TABLE SIGN-OUT COL */
 .att-signout-pending{color:var(--amb-m);font-size:12px;}
+
+/* ============================================
+   ADMIN MEMO & TO-DO
+   ============================================ */
+.an-grid{display:grid;grid-template-columns:270px 1fr;gap:1.1rem;align-items:start;}
+@media(max-width:900px){.an-grid{grid-template-columns:1fr;}}
+.an-list{background:var(--surf);border:1.5px solid var(--brd);border-radius:var(--r-xl);overflow:hidden;display:flex;flex-direction:column;max-height:600px;}
+.an-list-head{padding:.9rem 1rem .7rem;border-bottom:1px solid var(--brd);}
+.an-list-body{overflow-y:auto;flex:1;}
+.an-memo-item{padding:.75rem 1rem;border-bottom:1px solid var(--brd);cursor:pointer;transition:background .12s;position:relative;}
+.an-memo-item:hover{background:var(--surf2);}
+.an-memo-item.sel{background:var(--grn-xl);border-left:3px solid var(--grn-m);}
+.an-memo-date{font-size:10px;font-weight:700;color:var(--grn-m);letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px;}
+.an-memo-preview{font-size:12.5px;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.an-memo-meta{font-size:10px;color:var(--txt3);margin-top:4px;}
+.an-editor{background:var(--surf);border:1.5px solid var(--brd);border-radius:var(--r-xl);padding:1.2rem;min-height:600px;display:flex;flex-direction:column;}
+.an-editor-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.9rem;padding-bottom:.9rem;border-bottom:1px solid var(--brd);}
+.an-editor-hd input[type="date"]{border:1.5px solid var(--brd);border-radius:var(--r);padding:6px 10px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--surf2);color:var(--txt);}
+.an-save-indicator{font-size:11px;color:var(--txt3);margin-left:auto;display:flex;align-items:center;gap:4px;}
+.an-save-indicator.saved{color:var(--grn-m);}
+.an-notebook{flex:1;width:100%;resize:none;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:14.5px;line-height:32px;background-image:repeating-linear-gradient(to bottom, transparent, transparent 31px, var(--brd) 31px, var(--brd) 32px);background-attachment:local;padding:0 2px;color:var(--txt);min-height:420px;}
+.an-notebook::placeholder{color:var(--txt3);}
+.an-editor-ft{display:flex;gap:8px;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--brd);}
+.an-empty-editor{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--txt3);gap:8px;}
+.an-empty-editor i{font-size:38px;opacity:.35;}
+
+.an-todo-card{background:var(--surf);border:1.5px solid var(--brd);border-radius:var(--r-xl);padding:1.2rem;margin-top:1.5rem;}
+.an-todo-add{display:grid;grid-template-columns:1fr 150px 130px auto;gap:8px;margin-bottom:1rem;}
+@media(max-width:760px){.an-todo-add{grid-template-columns:1fr;}}
+.an-todo-sort{display:flex;gap:8px;align-items:center;margin-bottom:1rem;font-size:12px;color:var(--txt3);}
+.an-todo-sort select{border:1.5px solid var(--brd);border-radius:var(--r);padding:5px 9px;font-size:12px;font-family:'DM Sans',sans-serif;background:var(--surf2);color:var(--txt);}
+.an-todo-row{display:flex;align-items:flex-start;gap:10px;padding:.65rem 0;border-bottom:1px solid var(--brd);}
+.an-todo-row:last-child{border-bottom:none;}
+.an-todo-check{width:19px;height:19px;border-radius:6px;border:2px solid var(--brd2);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--surf);margin-top:1px;transition:all .12s;}
+.an-todo-check.done{background:var(--grn-m);border-color:var(--grn-m);color:#fff;}
+.an-todo-body{flex:1;min-width:0;}
+.an-todo-text{font-size:13.5px;color:var(--txt);word-break:break-word;}
+.an-todo-text.done{text-decoration:line-through;color:var(--txt3);}
+.an-todo-badges{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;}
+.an-todo-actions{display:flex;gap:4px;flex-shrink:0;}
+.an-todo-icon-btn{width:26px;height:26px;border-radius:7px;border:none;background:none;color:var(--txt3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .12s;}
+.an-todo-icon-btn:hover{background:var(--surf2);color:var(--txt);}
+.an-todo-section-lbl{font-size:10.5px;font-weight:700;color:var(--txt3);letter-spacing:.07em;text-transform:uppercase;margin:1rem 0 .5rem;}
+.an-todo-section-lbl:first-child{margin-top:0;}
 </style>
 </head>
 <body>
@@ -536,6 +580,9 @@ table.dt tbody tr:hover td{background:var(--surf2);}
       <button class="nav-item admin-nav" style="display:none" onclick="goPage('att-admin',this)" id="nav-att-admin"><i class="ti ti-calendar-stats"></i> Attendance log</button>
       <button class="nav-item admin-nav" style="display:none" onclick="goPage('geo-settings',this)" id="nav-geo-settings"><i class="ti ti-map-pin-cog"></i> Store location</button>
       <button class="nav-item admin-nav" style="display:none" onclick="goPage('reset',this)" id="nav-reset"><i class="ti ti-database-x"></i> Reset system data</button>
+
+      <div class="sb-sec owner-nav" style="display:none">Private</div>
+      <button class="nav-item owner-nav" style="display:none" onclick="goPage('admin-notes',this)" id="nav-admin-notes"><i class="ti ti-notes"></i> Memo & To-Do</button>
 
       <div class="sb-foot">
         <div class="sb-foot-text"><strong>A-lect Water</strong><br>Data stays in browser<br><span style="font-family:'DM Mono',monospace;">v1.0 · 2026</span></div>
@@ -674,7 +721,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                     <div class="r-row"><span class="rl">Extra bags carried</span><span class="rv" id="sp-sum-extra">0</span></div>
                   </div>
                   <div class="field"><label>Qty sold</label><input type="number" id="sp-sold" placeholder="e.g. 92" min="0" oninput="updateR()" disabled></div>
-                  <div class="field"><label>Qty leakage exchanged</label><input type="number" id="sp-leak-ex" value="0" min="0" oninput="updateR()" disabled></div>
+                  <div class="field"><label>Qty of Leakage/Damage Exchange</label><input type="number" id="sp-leak-ex" value="0" min="0" oninput="updateR()" disabled></div>
                   <div class="field full"><label>Extra Quantity</label><input type="number" id="sp-dmg" value="0" min="0" oninput="updateR()" disabled></div>
 
                   <!-- PAYMENT METHOD (Driver/Supply return) -->
@@ -749,7 +796,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="r-row"><span class="rl">Bags carried</span><span class="rv" id="rs-carried">0</span></div>
               <div class="r-row" id="rs-extra-row"><span class="rl">Extra bags carried</span><span class="rv" id="rs-extra">0</span></div>
               <div class="r-row" id="rs-sold-row" style="display:none"><span class="rl">Bags sold</span><span class="rv" id="rs-sold">0</span></div>
-              <div class="r-row" id="rs-leak-ex-row" style="display:none"><span class="rl">Leakage exchanged</span><span class="rv" id="rs-leak-ex">0</span></div>
+              <div class="r-row" id="rs-leak-ex-row" style="display:none"><span class="rl">Qty of Leakage/Damage Exchange</span><span class="rv" id="rs-leak-ex">0</span></div>
               <div class="r-row" id="rs-dmg-row" style="display:none"><span class="rl">Extra quantity</span><span class="rv" id="rs-dmg" style="color:var(--red)">0</span></div>
               <div class="r-row" id="rs-outstanding-row" style="display:none"><span class="rl">Outstanding bags</span><span class="rv" id="rs-outstanding">0</span></div>
               <div class="r-row" id="rs-method-row" style="display:none"><span class="rl">Method</span><span class="rv" id="rs-method">CASH</span></div>
@@ -978,6 +1025,32 @@ table.dt tbody tr:hover td{background:var(--surf2);}
               <div class="r-body" id="upr-history-body">
                 <div class="empty" style="padding:1.5rem 0"><i class="ti ti-packages"></i><p>No batches in progress</p></div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRINTED ROLL — LEFTOVER & USAGE HISTORY -->
+        <div style="margin-top:1.75rem">
+          <div class="ph" style="margin-bottom:1rem">
+            <div>
+              <div class="ph-title" style="font-size:16px"><i class="ti ti-layers-subtract" style="color:#1a5fcb"></i> Printed Roll Usage & Leftover Tracking</div>
+              <div class="ph-sub">Every printed rolls lot (ALT/…) stays under the <strong>same record</strong> across every production run it's used in — trace its full history from first use to the last bag produced.</div>
+            </div>
+          </div>
+
+          <div id="roll-tracker-alert" style="display:none;background:linear-gradient(135deg,rgba(255,180,40,.12),rgba(255,140,20,.08));border:1.5px solid var(--amb-m);border-radius:var(--r-lg);padding:1rem 1.2rem;margin-bottom:1.1rem">
+            <div style="font-size:11px;font-weight:700;color:var(--amb);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px"><i class="ti ti-alert-triangle"></i> Left over in machine — use these rolls first</div>
+            <div id="roll-tracker-alert-list" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px"></div>
+          </div>
+
+          <div class="pos-card" style="max-width:none">
+            <div class="pos-head"><div class="pos-head-ico" style="background:linear-gradient(135deg,#1a5fcb,#4d9aff)"><i class="ti ti-history"></i></div><div><h2>Roll history</h2><p>Status, remaining material, and every production run tied to each roll</p></div></div>
+            <div class="pos-body">
+              <div class="sbar" style="margin-bottom:1rem;max-width:340px">
+                <i class="ti ti-search"></i>
+                <input type="text" id="roll-tracker-search" placeholder="Search by ALT/… ID" oninput="renderRollTracker(this.value)">
+              </div>
+              <div id="roll-tracker-body"></div>
             </div>
           </div>
         </div>
@@ -1843,6 +1916,71 @@ table.dt tbody tr:hover td{background:var(--surf2);}
         </div>
       </div>
 
+      <!-- ADMIN MEMO & TO-DO (Owner only) -->
+      <div class="page" id="page-admin-notes">
+        <div class="ph"><div><div class="ph-title">Memo & To-Do <span class="atag"><i class="ti ti-lock" style="font-size:8px"></i> Owner only</span></div><div class="ph-sub">Your private workspace — notes and tasks here are visible only to you</div></div></div>
+
+        <!-- MEMO PAD -->
+        <div class="an-grid">
+          <div class="an-list">
+            <div class="an-list-head">
+              <div class="sbar" style="margin-bottom:.6rem">
+                <i class="ti ti-search"></i>
+                <input type="text" id="an-memo-search" placeholder="Search notes…" oninput="renderMemoList(this.value)">
+              </div>
+              <button class="btn btn-primary btn-full btn-sm" onclick="createMemo()"><i class="ti ti-plus"></i> New memo</button>
+            </div>
+            <div class="an-list-body" id="an-memo-list"></div>
+          </div>
+
+          <div class="an-editor" id="an-editor">
+            <div class="an-empty-editor" id="an-editor-empty">
+              <i class="ti ti-notes"></i>
+              <div>Select a memo, or start a new one</div>
+            </div>
+            <div id="an-editor-active" style="display:none;flex-direction:column;flex:1">
+              <div class="an-editor-hd">
+                <input type="date" id="an-memo-date" onchange="onMemoDateChange()">
+                <span style="font-size:11px;color:var(--txt3)" id="an-memo-meta">—</span>
+                <span class="an-save-indicator" id="an-save-indicator"><i class="ti ti-cloud-check"></i> Saved</span>
+              </div>
+              <textarea class="an-notebook" id="an-memo-content" placeholder="Start typing…" oninput="onMemoInput()"></textarea>
+              <div class="an-editor-ft">
+                <button class="btn btn-primary btn-sm" onclick="saveMemoManual()"><i class="ti ti-device-floppy"></i> Save</button>
+                <button class="btn btn-outline btn-sm" style="border-color:var(--red-l);color:var(--red-m)" onclick="deleteMemo()"><i class="ti ti-trash"></i> Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TO-DO LIST -->
+        <div class="an-todo-card">
+          <div class="pos-head" style="padding:0 0 1rem"><div class="pos-head-ico" style="background:linear-gradient(135deg,#1a5fcb,#4d9aff)"><i class="ti ti-list-check"></i></div><div><h2>To-Do List</h2><p>Private tasks and reminders — only you can see these</p></div></div>
+
+          <div class="an-todo-add">
+            <input type="text" id="an-todo-text" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTodo()">
+            <input type="date" id="an-todo-due">
+            <select id="an-todo-priority">
+              <option value="low">Low priority</option>
+              <option value="medium" selected>Medium priority</option>
+              <option value="high">High priority</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="addTodo()"><i class="ti ti-plus"></i> Add</button>
+          </div>
+
+          <div class="an-todo-sort">
+            <span>Sort by</span>
+            <select id="an-todo-sort" onchange="renderTodoList()">
+              <option value="due">Due date</option>
+              <option value="priority">Priority</option>
+              <option value="created">Date added</option>
+            </select>
+          </div>
+
+          <div id="an-todo-body"></div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -2126,6 +2264,7 @@ const DB={
     {id:3,name:'Manager',username:'manager',password:'mgr456',role:'manager',jobRole:'manager',active:true},
   ],
   sales:[],production:[],expenses:[],rawmats:[],reconciliations:[],attendance:[],prodcalc:[],leakage:[],loans:[],
+  memos:[],todos:[],
   _id:100,nid(){return++this._id;}
 };
 const MAT_CATS=[
@@ -2457,6 +2596,10 @@ function applyUserPermissionsToNav(user){
     if(!el.id) el.style.display = showAdminSection ? '' : 'none';
   });
 
+  // "Private" section — Memo & To-Do — visible ONLY to the strict Owner/admin account,
+  // never grantable to managers/supervisors via permissions (unlike the rest of Admin section)
+  document.querySelectorAll('.owner-nav').forEach(el=>{ el.style.display = isAdmin ? '' : 'none'; });
+
   // Conditional UI elements
   const addCatBtn = document.getElementById('add-cat-btn');
   if(addCatBtn) addCatBtn.style.display = (isAdmin||canDo('add_exp_cat')) ? '' : 'none';
@@ -2474,7 +2617,7 @@ async function loadFromFirebase(){
   }
   toast('Syncing data…','');
   try{
-    const cols=['sales','production','expenses','rawmats','prodcalc','users','attendance','leakage','loans'];
+    const cols=['sales','production','expenses','rawmats','prodcalc','users','attendance','leakage','loans','memos','todos'];
     for(const col of cols){
       const snap=await fsGetDocs(fsCol(col));
       snap.forEach(d=>{
@@ -2512,6 +2655,7 @@ async function loadFromFirebase(){
       }
     }
     if(CU&&(CU.role!=='staff'||canAccess('dash'))) renderDash();
+    if(CU&&CU.role==='admin') renderAdminNotesPage();
     toast('Data synced ✓','s');
   } catch(e){
     console.warn('Firebase load error:',e);
@@ -2747,6 +2891,7 @@ function doLogout(){
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('lu').value='';document.getElementById('lp').value='';
   document.querySelectorAll('.admin-nav').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.owner-nav').forEach(el=>el.style.display='none');
   closeSidebar();
 }
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
@@ -2762,6 +2907,7 @@ function closeSidebar(){
   document.getElementById('sidebar-overlay').classList.remove('open');
 }
 function goPage(name,btn){
+  if(name==='admin-notes' && (!CU || CU.role!=='admin')){ toast('Owner access only','e'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
@@ -2773,7 +2919,8 @@ function goPage(name,btn){
     attendance:()=>{updateAttStatusBar();renderAttMy();},
     'att-admin':()=>renderAttAdmin(''),
     'geo-settings':()=>renderGeoSettings(),
-    reset:()=>renderResetPage()};
+    reset:()=>renderResetPage(),
+    'admin-notes':()=>renderAdminNotesPage()};
   if(map[name])map[name]();
   closeSidebar();
 }
@@ -3733,6 +3880,107 @@ function rawmatAvailBundles(r){
 }
 
 /* =============================================
+   PRINTED ROLL — LEFTOVER STATUS & USAGE HISTORY
+   Tracks a single printed-rolls lot (ALT/…) across every production
+   run that draws from it, so a partially-used roll is never treated
+   as a "new" roll — the same lot id just keeps accumulating history.
+   ============================================= */
+
+// All production batches that have ever drawn KG from this lot, oldest first
+function rollRunsForLot(lotId){
+  const lid=String(lotId);
+  return DB.production.filter(p=>String(p.matSachetLotId)===lid).slice().sort((a,b)=>(a.ts||a.id||0)-(b.ts||b.id||0));
+}
+
+// Compute the lifecycle status of a printed-rolls lot purely from existing
+// production + rawmat data — no schema change needed, it's always derived live.
+function rollLotStatus(lot){
+  const original = lot.qtyKg!=null?lot.qtyKg:(lot.totalKg!=null?lot.totalKg:(lot.kg!=null?lot.kg:0));
+  const avail = rawmatAvailable(lot);
+  const consumed = rawmatConsumed(lot.id);
+  const runs = rollRunsForLot(lot.id);
+  const totalProduced = runs.reduce((a,p)=>a+(p.qty||0),0);
+  let status,label,badgeClass,icon;
+  if(consumed<=0){
+    status='not_started'; label='Not started'; badgeClass='bb'; icon='ti-circle-dashed';
+  } else if(avail>0.001){
+    status='in_progress'; label='In Progress — Left Over in Machine'; badgeClass='ba'; icon='ti-clock-hour-4';
+  } else {
+    status='completed'; label='Completed'; badgeClass='bg'; icon='ti-circle-check';
+  }
+  return {status,label,badgeClass,icon,original,avail,consumed,totalProduced,runs};
+}
+
+// Every printed-rolls lot (regular + remainder, excluding packing bags), newest first
+function allPrintedRollLots(){
+  return DB.rawmats.filter(r=>!(r.isPackingBag || String(r.category||'').startsWith('A0002'))).slice().reverse();
+}
+
+function renderRollTracker(q){
+  const wrap = document.getElementById('roll-tracker-body'); if(!wrap) return;
+  const query = (q||document.getElementById('roll-tracker-search')?.value||'').trim().toLowerCase();
+  let lots = allPrintedRollLots();
+  if(query) lots = lots.filter(r => (r.altId||'').toLowerCase().includes(query) || (r.sourceAltId||'').toLowerCase().includes(query));
+
+  // "Use these first" alert — rolls that currently have leftover material sitting in the machine
+  const alertEl = document.getElementById('roll-tracker-alert');
+  const alertList = document.getElementById('roll-tracker-alert-list');
+  const leftover = lots.filter(r => rollLotStatus(r).status==='in_progress');
+  if(alertEl && alertList){
+    if(!leftover.length){ alertEl.style.display='none'; }
+    else {
+      alertEl.style.display='block';
+      alertList.innerHTML = leftover.map(r=>{
+        const s=rollLotStatus(r);
+        return `<div style="display:flex;align-items:center;gap:8px;background:rgba(255,180,40,.08);border:1px solid rgba(255,180,40,.25);border-radius:var(--r);padding:.4rem .7rem">
+          <i class="ti ti-alert-triangle" style="color:var(--amb-m);font-size:13px;flex-shrink:0"></i>
+          <span><strong style="font-family:'DM Mono',monospace;color:#1a5fcb">${r.altId||'—'}</strong> — ${s.avail.toFixed(2)} kg left over in machine · ${s.totalProduced.toLocaleString()} bags produced so far — <strong style="color:var(--amb)">use this roll first</strong></span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  if(!lots.length){
+    wrap.innerHTML='<div class="empty" style="padding:1.5rem 0"><i class="ti ti-layers-subtract"></i><p>No printed rolls logged yet</p></div>';
+    return;
+  }
+
+  wrap.innerHTML = lots.map(r=>{
+    const s = rollLotStatus(r);
+    const pct = s.original>0 ? Math.min(100, Math.round(s.consumed/s.original*100)) : (s.status==='completed'?100:0);
+    const barColor = s.status==='completed' ? 'var(--grn-m)' : (s.status==='in_progress' ? 'var(--amb-m)' : 'var(--brd2)');
+    const historyRows = s.runs.length ? s.runs.map(p=>`
+        <div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:4px 0;border-bottom:1px dashed var(--brd)">
+          <span style="color:var(--txt3)">${fmtDate(p.date)} · ${p.batch}</span>
+          <span>${(p.matSachetQtyUsed||0).toFixed(2)} kg used</span>
+          <span style="font-weight:600">${(p.qty||0).toLocaleString()} bags · <span class="badge ${p.status==='complete'?'bg':'ba'}" style="font-size:8.5px;padding:1px 6px">${p.status==='complete'?'Complete':'In progress'}</span></span>
+        </div>`).join('') : '<div style="font-size:11.5px;color:var(--txt3);padding:4px 0">Not drawn into any production run yet</div>';
+    return `
+    <div class="srow" style="flex-direction:column;align-items:flex-start;gap:6px;padding:.8rem 0;border-bottom:1px solid var(--brd)">
+      <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap">
+        <span style="font-family:'DM Mono',monospace;font-size:12.5px;font-weight:700;color:#1a5fcb">${r.altId||'—'}</span>
+        ${r.isRemainder?'<span class="badge-rlt"><i class="ti ti-refresh-dot" style="font-size:9px"></i> Remainder</span>':''}
+        <span class="badge ${s.badgeClass}"><i class="ti ${s.icon}" style="font-size:11px;margin-right:3px"></i> ${s.label}</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--txt3)">${fmtDate(r.date)}</span>
+      </div>
+      <div style="display:flex;gap:14px;font-size:12px;flex-wrap:wrap">
+        <span>${s.original.toFixed(2)} kg original</span>
+        <span style="color:${s.avail>0?'var(--grn)':'var(--txt3)'}">· ${s.avail.toFixed(2)} kg remaining</span>
+        <span>· <strong>${s.totalProduced.toLocaleString()}</strong> bags produced total</span>
+        <span>· ${s.runs.length} production run${s.runs.length!==1?'s':''}</span>
+      </div>
+      <div style="width:100%;height:5px;background:var(--surf2);border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px;transition:width .3s"></div>
+      </div>
+      <details style="width:100%">
+        <summary style="cursor:pointer;font-size:11px;color:var(--grn-m);font-weight:600;list-style:none;display:flex;align-items:center;gap:4px"><i class="ti ti-chevron-down" style="font-size:12px"></i> Full usage history</summary>
+        <div style="margin-top:6px">${historyRows}</div>
+      </details>
+    </div>`;
+  }).join('');
+}
+
+/* =============================================
    ROLL LEFTOVER RECONCILIATION
    ============================================= */
 
@@ -4052,6 +4300,7 @@ function populateMatLotSelect(){
   }
   onMatLotChange('sachet');
   onMatLotChange('packing');
+  renderRollTracker();
 }
 
 function onMatLotChange(type){
@@ -6256,6 +6505,265 @@ async function executeReset(){
   btn.innerHTML = '<i class="ti ti-database-x"></i> Yes, permanently delete';
 
   toast('Selected data cleared successfully ✓','s');
+}
+
+/* =============================================
+   ADMIN MEMO & TO-DO  (Owner-only private workspace)
+   Memos and tasks are stored in DB.memos / DB.todos and synced to
+   Firebase like every other collection, so they persist permanently
+   until the admin explicitly deletes them.
+   ============================================= */
+let anSelectedMemoId = null;
+let anSaveTimer = null;
+
+function renderAdminNotesPage(){
+  if(!CU || CU.role!=='admin') return;
+  renderMemoList();
+  renderTodoList();
+}
+
+/* ---------- MEMO PAD ---------- */
+
+function createMemo(){
+  const now = Date.now();
+  const memo = {id:DB.nid(), date:TODAY, content:'', createdAt:now, updatedAt:now, staffId:CU.id, staff:CU.name};
+  DB.memos.push(memo);
+  if(window.fsReady){
+    const clean=Object.fromEntries(Object.entries(memo).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('memos'), clean).then(ref=>{ memo._fbId=ref.id; }).catch(e=>console.warn('FS memo write:',e));
+  }
+  anSelectedMemoId = memo.id;
+  renderMemoList();
+  openMemoEditor(memo);
+}
+
+function renderMemoList(q){
+  const body = document.getElementById('an-memo-list'); if(!body) return;
+  const query = (q!==undefined?q:(document.getElementById('an-memo-search')?.value||'')).trim().toLowerCase();
+  let memos = DB.memos.slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  if(query) memos = memos.filter(m => (m.content||'').toLowerCase().includes(query));
+
+  if(!memos.length){
+    body.innerHTML = '<div class="empty" style="padding:2rem 1rem"><i class="ti ti-notes"></i><p>'+(query?'No matching notes':'No memos yet — tap "New memo" to start')+'</p></div>';
+    return;
+  }
+  body.innerHTML = memos.map(m=>{
+    const preview = (m.content||'').trim() || 'Empty note…';
+    const sel = String(m.id)===String(anSelectedMemoId);
+    return `<div class="an-memo-item ${sel?'sel':''}" onclick="selectMemo(${m.id})">
+      <div class="an-memo-date">${fmtDate(m.date)}</div>
+      <div class="an-memo-preview">${escapeHtml(preview)}</div>
+      <div class="an-memo-meta">Modified ${fmtDateTime(m.updatedAt)}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectMemo(id){
+  const memo = DB.memos.find(m=>String(m.id)===String(id)); if(!memo) return;
+  anSelectedMemoId = memo.id;
+  renderMemoList();
+  openMemoEditor(memo);
+}
+
+function openMemoEditor(memo){
+  document.getElementById('an-editor-empty').style.display='none';
+  document.getElementById('an-editor-active').style.display='flex';
+  document.getElementById('an-memo-date').value = memo.date || TODAY;
+  document.getElementById('an-memo-content').value = memo.content || '';
+  document.getElementById('an-memo-meta').textContent = 'Created '+fmtDateTime(memo.createdAt)+' · Modified '+fmtDateTime(memo.updatedAt);
+  setSaveIndicator(true);
+}
+
+function currentMemo(){
+  return DB.memos.find(m=>String(m.id)===String(anSelectedMemoId));
+}
+
+function setSaveIndicator(saved){
+  const el = document.getElementById('an-save-indicator'); if(!el) return;
+  if(saved){ el.className='an-save-indicator saved'; el.innerHTML='<i class="ti ti-cloud-check"></i> Saved'; }
+  else { el.className='an-save-indicator'; el.innerHTML='<i class="ti ti-loader"></i> Saving…'; }
+}
+
+// Auto-save as the admin types — debounced so we don't hammer Firestore on every keystroke
+function onMemoInput(){
+  const memo = currentMemo(); if(!memo) return;
+  setSaveIndicator(false);
+  clearTimeout(anSaveTimer);
+  anSaveTimer = setTimeout(()=>flushMemoSave(false), 600);
+}
+
+function onMemoDateChange(){
+  const memo = currentMemo(); if(!memo) return;
+  memo.date = document.getElementById('an-memo-date').value || TODAY;
+  flushMemoSave(false);
+}
+
+function flushMemoSave(manual){
+  const memo = currentMemo(); if(!memo) return;
+  memo.content = document.getElementById('an-memo-content').value;
+  memo.date = document.getElementById('an-memo-date').value || memo.date || TODAY;
+  memo.updatedAt = Date.now();
+  document.getElementById('an-memo-meta').textContent = 'Created '+fmtDateTime(memo.createdAt)+' · Modified '+fmtDateTime(memo.updatedAt);
+  if(window.fsReady){
+    if(memo._fbId){
+      fsUpdateDoc(fsDoc('memos', memo._fbId), {content:memo.content, date:memo.date, updatedAt:memo.updatedAt}).catch(e=>console.warn('FS memo update:',e));
+    } else {
+      const clean=Object.fromEntries(Object.entries(memo).filter(([,v])=>v!==undefined));
+      fsAddDoc(fsCol('memos'), clean).then(ref=>{ memo._fbId=ref.id; }).catch(e=>console.warn('FS memo write:',e));
+    }
+  }
+  setSaveIndicator(true);
+  renderMemoList();
+  if(manual) toast('Memo saved ✓','s');
+}
+
+function saveMemoManual(){
+  clearTimeout(anSaveTimer);
+  flushMemoSave(true);
+}
+
+function deleteMemo(){
+  const memo = currentMemo(); if(!memo) return;
+  if(!confirm('Delete this memo permanently? This cannot be undone.')) return;
+  clearTimeout(anSaveTimer);
+  DB.memos = DB.memos.filter(m=>m.id!==memo.id);
+  if(window.fsReady && memo._fbId){
+    fsDeleteDoc(fsDoc('memos', memo._fbId)).catch(e=>console.warn('FS memo delete:',e));
+  }
+  anSelectedMemoId = null;
+  document.getElementById('an-editor-empty').style.display='flex';
+  document.getElementById('an-editor-active').style.display='none';
+  renderMemoList();
+  toast('Memo deleted','s');
+}
+
+/* ---------- TO-DO LIST ---------- */
+
+function addTodo(){
+  const textEl = document.getElementById('an-todo-text');
+  const text = textEl.value.trim();
+  if(!text){ toast('Enter a task','e'); return; }
+  const due = document.getElementById('an-todo-due').value || null;
+  const priority = document.getElementById('an-todo-priority').value || 'medium';
+  const now = Date.now();
+  const task = {id:DB.nid(), text, dueDate:due, priority, completed:false, createdAt:now, updatedAt:now, completedAt:null, staffId:CU.id, staff:CU.name};
+  DB.todos.push(task);
+  if(window.fsReady){
+    const clean=Object.fromEntries(Object.entries(task).filter(([,v])=>v!==undefined));
+    fsAddDoc(fsCol('todos'), clean).then(ref=>{ task._fbId=ref.id; }).catch(e=>console.warn('FS todo write:',e));
+  }
+  textEl.value='';
+  document.getElementById('an-todo-due').value='';
+  document.getElementById('an-todo-priority').value='medium';
+  renderTodoList();
+  toast('Task added ✓','s');
+}
+
+function toggleTodo(id){
+  const t = DB.todos.find(x=>String(x.id)===String(id)); if(!t) return;
+  t.completed = !t.completed;
+  t.completedAt = t.completed ? Date.now() : null;
+  t.updatedAt = Date.now();
+  if(window.fsReady && t._fbId){
+    fsUpdateDoc(fsDoc('todos', t._fbId), {completed:t.completed, completedAt:t.completedAt, updatedAt:t.updatedAt}).catch(e=>console.warn('FS todo update:',e));
+  }
+  renderTodoList();
+}
+
+function editTodo(id){
+  const t = DB.todos.find(x=>String(x.id)===String(id)); if(!t) return;
+  const newText = prompt('Edit task:', t.text);
+  if(newText===null) return;
+  const trimmed = newText.trim();
+  if(!trimmed){ toast('Task cannot be empty','e'); return; }
+  t.text = trimmed;
+  t.updatedAt = Date.now();
+  if(window.fsReady && t._fbId){
+    fsUpdateDoc(fsDoc('todos', t._fbId), {text:t.text, updatedAt:t.updatedAt}).catch(e=>console.warn('FS todo update:',e));
+  }
+  renderTodoList();
+}
+
+function deleteTodo(id){
+  const t = DB.todos.find(x=>String(x.id)===String(id)); if(!t) return;
+  if(!confirm('Delete this task?')) return;
+  DB.todos = DB.todos.filter(x=>x.id!==t.id);
+  if(window.fsReady && t._fbId){
+    fsDeleteDoc(fsDoc('todos', t._fbId)).catch(e=>console.warn('FS todo delete:',e));
+  }
+  renderTodoList();
+}
+
+function isTodoOverdue(t){
+  return !t.completed && t.dueDate && t.dueDate < TODAY;
+}
+
+const AN_PRIORITY_RANK = {high:0, medium:1, low:2};
+const AN_PRIORITY_BADGE = {high:'br', medium:'ba', low:'bb'};
+const AN_PRIORITY_LABEL = {high:'High', medium:'Medium', low:'Low'};
+
+function sortTodos(list){
+  const by = document.getElementById('an-todo-sort')?.value || 'due';
+  const arr = list.slice();
+  if(by==='due'){
+    arr.sort((a,b)=>{
+      if(!a.dueDate && !b.dueDate) return (b.createdAt||0)-(a.createdAt||0);
+      if(!a.dueDate) return 1;
+      if(!b.dueDate) return -1;
+      return a.dueDate<b.dueDate?-1:(a.dueDate>b.dueDate?1:0);
+    });
+  } else if(by==='priority'){
+    arr.sort((a,b)=>AN_PRIORITY_RANK[a.priority]-AN_PRIORITY_RANK[b.priority] || (b.createdAt||0)-(a.createdAt||0));
+  } else {
+    arr.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  }
+  return arr;
+}
+
+function todoRowHtml(t){
+  const overdue = isTodoOverdue(t);
+  const dueBadge = t.dueDate ? `<span class="badge ${overdue?'br':'bb'}"><i class="ti ti-calendar-event" style="font-size:10px;margin-right:3px"></i>${overdue?'Overdue · ':''}${fmtDate(t.dueDate)}</span>` : '';
+  const prioBadge = `<span class="badge ${AN_PRIORITY_BADGE[t.priority]||'ba'}">${AN_PRIORITY_LABEL[t.priority]||'Medium'}</span>`;
+  return `<div class="an-todo-row">
+    <div class="an-todo-check ${t.completed?'done':''}" onclick="toggleTodo(${t.id})">${t.completed?'<i class=\"ti ti-check\" style=\"font-size:13px\"></i>':''}</div>
+    <div class="an-todo-body">
+      <div class="an-todo-text ${t.completed?'done':''}">${escapeHtml(t.text)}</div>
+      <div class="an-todo-badges">${prioBadge}${dueBadge}</div>
+    </div>
+    <div class="an-todo-actions">
+      <button class="an-todo-icon-btn" onclick="editTodo(${t.id})" title="Edit"><i class="ti ti-pencil"></i></button>
+      <button class="an-todo-icon-btn" onclick="deleteTodo(${t.id})" title="Delete"><i class="ti ti-trash"></i></button>
+    </div>
+  </div>`;
+}
+
+function renderTodoList(){
+  const body = document.getElementById('an-todo-body'); if(!body) return;
+  const pending = sortTodos(DB.todos.filter(t=>!t.completed));
+  const completed = DB.todos.filter(t=>t.completed).sort((a,b)=>(b.completedAt||0)-(a.completedAt||0));
+
+  let html = '';
+  html += '<div class="an-todo-section-lbl">Pending ('+pending.length+')</div>';
+  html += pending.length ? pending.map(todoRowHtml).join('') : '<div class="empty" style="padding:1.2rem 0"><i class="ti ti-checklist"></i><p>No pending tasks</p></div>';
+
+  if(completed.length){
+    html += '<div class="an-todo-section-lbl">Completed ('+completed.length+')</div>';
+    html += completed.map(todoRowHtml).join('');
+  }
+  body.innerHTML = html;
+}
+
+/* ---------- shared helpers ---------- */
+function fmtDateTime(ts){
+  if(!ts) return '—';
+  const d = new Date(ts);
+  const months='Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+  let h=d.getHours(), ampm=h>=12?'pm':'am'; h=h%12||12;
+  const min=String(d.getMinutes()).padStart(2,'0');
+  return d.getDate()+' '+months[d.getMonth()]+' '+String(d.getFullYear()).slice(2)+' · '+h+':'+min+ampm;
+}
+function escapeHtml(s){
+  const d=document.createElement('div'); d.textContent=s; return d.innerHTML;
 }
 
 initDRBars();
