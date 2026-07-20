@@ -691,7 +691,12 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <div id="sp-going-fields">
                   <div class="field">
                     <label>Driver name</label>
-                    <input type="text" id="sp-driver" placeholder="e.g. Musa">
+                    <div style="display:flex;gap:6px">
+                      <select id="sp-driver" style="flex:1">
+                        <option value="">— Select driver —</option>
+                      </select>
+                      <button class="btn btn-outline btn-sm admin-nav" id="add-driver-btn" style="display:none;flex-shrink:0" onclick="promptAddDriver()" title="Add a new driver"><i class="ti ti-plus"></i></button>
+                    </div>
                   </div>
                   <div class="field">
                     <label>Product</label>
@@ -2101,6 +2106,21 @@ table.dt tbody tr:hover td{background:var(--surf2);}
   </div>
 </div>
 
+<div class="mo" id="adddriver-mo">
+  <div class="modal">
+    <div class="modal-hd"><span>Add driver</span><button class="modal-x" onclick="closeAddDriverMo()"><i class="ti ti-x"></i></button></div>
+    <div class="field full" style="margin-bottom:1.2rem">
+      <label>Driver name</label>
+      <input type="text" id="adddriver-input" placeholder="e.g. Musa" maxlength="40">
+      <div class="err" id="adddriver-err" style="display:none;margin-top:6px"><i class="ti ti-alert-circle"></i> <span id="adddriver-err-msg">Enter a driver name</span></div>
+    </div>
+    <div style="display:flex;gap:9px">
+      <button class="btn btn-primary btn-full" onclick="confirmAddDriver()"><i class="ti ti-check"></i> Add driver</button>
+      <button class="btn btn-outline btn-full" onclick="closeAddDriverMo()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="mo" id="loan-repay-mo">
   <div class="modal">
     <div class="modal-hd"><span>Log repayment</span><button class="modal-x" onclick="closeLoanRepayMo()"><i class="ti ti-x"></i></button></div>
@@ -2308,6 +2328,8 @@ const EXP_CATS_BASE = ['Operator','Fuel','Repair','Driver','Maintenance','Equipm
 let CUSTOM_EXP_CATS = (function(){ try{ const r=localStorage.getItem('xcel_exp_cats'); return r?JSON.parse(r):[]; }catch(e){ return []; } })();
 // Machines list (admin-managed, persisted in localStorage)
 let MACHINES = (function(){ try{ const r=localStorage.getItem('xcel_machines'); return r?JSON.parse(r):['Machine 1']; }catch(e){ return ['Machine 1']; } })();
+// Drivers (admin-managed list, used on the Supply/New Trip screen)
+let DRIVERS = (function(){ try{ const r=localStorage.getItem('xcel_drivers'); return r?JSON.parse(r):[]; }catch(e){ return []; } })();
 const ALL_PAGES = [
   {key:'sale',   label:'Record sale',          icon:'ti-shopping-cart'},
   {key:'prod',   label:'Log production',       icon:'ti-packages'},
@@ -2558,6 +2580,7 @@ function finaliseLogin(user){
   setDates();
   populateExpCats();
   populateUprMachineSelect();
+  populateDriverSelect();
   populateLoanStaffSelect();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
   resetRollRows();
@@ -2607,6 +2630,8 @@ function applyUserPermissionsToNav(user){
   if(addCatBtn) addCatBtn.style.display = (isAdmin||canDo('add_exp_cat')) ? '' : 'none';
   const addMachineBtn = document.getElementById('add-machine-btn');
   if(addMachineBtn) addMachineBtn.style.display = isAdmin ? '' : 'none';
+  const addDriverBtn = document.getElementById('add-driver-btn');
+  if(addDriverBtn) addDriverBtn.style.display = isAdmin ? '' : 'none';
 }
 
 /* =============================================
@@ -3053,6 +3078,7 @@ function selSaleType(t, el){
   el.classList.add('sel');
   document.getElementById('walkin-fields').style.display = t==='walkin' ? 'contents' : 'none';
   document.getElementById('supply-fields').style.display = t==='supply' ? 'contents' : 'none';
+  if(t==='supply') populateDriverSelect();
   document.getElementById('leakage-fields').style.display = t==='leakage' ? '' : 'none';
   document.getElementById('r-body-walkin').style.display = t==='walkin' ? '' : 'none';
   document.getElementById('r-body-supply').style.display = t==='supply' ? '' : 'none';
@@ -3940,24 +3966,54 @@ function rollConsumed(rollId){
 function rollAvailable(roll){
   return Math.max(0, +(roll.weight - rollConsumed(roll.id)).toFixed(2));
 }
-// All production batches that have ever drawn KG from this specific roll, oldest first
-function rollRunsForRoll(rollId){
+// Every production doc that ever drew from this roll
+function rollDocsForRoll(rollId){
   const rid=String(rollId);
-  return DB.production.filter(p=>String(p.matSachetRollId)===rid).slice().sort((a,b)=>(a.ts||a.id||0)-(b.ts||b.id||0));
+  return DB.production.filter(p=>String(p.matSachetRollId)===rid);
 }
-// Lifecycle status of one roll — Available / In Machine (leftover) / Completed
+// The full sequence of Update Production Record stages for this roll, oldest first —
+// e.g. "Leftover — 200 bags so far" then later "Complete — 350 bags total" as two
+// separate entries, instead of collapsing them into one summed row. Falls back to a
+// single synthesized entry for older records logged before per-stage history existed.
+function rollHistoryEntries(rollId){
+  const entries=[];
+  rollDocsForRoll(rollId).forEach(p=>{
+    if(p.updateLog && p.updateLog.length){
+      p.updateLog.forEach(log=>entries.push({
+        ts: log.ts||0, date: log.date||p.date, batch: p.batch,
+        addedQty: log.addedQty||0, cumQty: log.cumQty||0, status: log.status,
+        matSachetQtyUsed: p.matSachetQtyUsed||0
+      }));
+    } else if(p.qty>0 || p.status){
+      entries.push({
+        ts: p.ts||p.id||0, date: p.date, batch: p.batch,
+        addedQty: p.qty||0, cumQty: p.qty||0, status: p.status,
+        matSachetQtyUsed: p.matSachetQtyUsed||0
+      });
+    }
+  });
+  return entries.sort((a,b)=>(a.ts||0)-(b.ts||0));
+}
+// Lifecycle status of one roll — Available / In Machine (leftover) / Completed.
+// Based on the batch's own recorded status (not raw weight math) — a roll stays
+// "In Machine" for as long as its most recent production update says Leftover,
+// and only flips to Completed once a batch on it is actually marked Complete.
 function rollStatusOf(roll){
+  const docs=rollDocsForRoll(roll.id);
   const consumed=rollConsumed(roll.id);
   const avail=rollAvailable(roll);
-  const runs=rollRunsForRoll(roll.id);
-  const totalProduced=runs.reduce((a,p)=>a+(p.qty||0),0);
+  const runs=rollHistoryEntries(roll.id);
+  const totalProduced=docs.reduce((a,p)=>a+(p.qty||0),0);
   let status,label,badgeClass,icon;
-  if(consumed<=0){
+  if(!docs.length){
     status='available'; label='Available'; badgeClass='bb'; icon='ti-circle-dashed';
-  } else if(avail>0.001){
-    status='in_machine'; label='In Machine — Leftover'; badgeClass='ba'; icon='ti-clock-hour-4';
   } else {
-    status='completed'; label='Completed'; badgeClass='bg'; icon='ti-circle-check';
+    const mostRecent=docs.slice().sort((a,b)=>(b.ts||b.id||0)-(a.ts||a.id||0))[0];
+    if(mostRecent.status==='complete'){
+      status='completed'; label='Completed'; badgeClass='bg'; icon='ti-circle-check';
+    } else {
+      status='in_machine'; label='In Machine — Leftover'; badgeClass='ba'; icon='ti-clock-hour-4';
+    }
   }
   return {status,label,badgeClass,icon,weight:roll.weight,avail,consumed,totalProduced,runs};
 }
@@ -4005,25 +4061,30 @@ function renderRollTracker(q){
   }
 
   wrap.innerHTML = lots.map(r=>{
-    const rolls = rollsOf(r);
-    const rollCards = rolls.map(roll=>{
+    // History = rolls actually used in production. Untouched/Available rolls with
+    // zero production runs are inventory, not history — leave them off this view.
+    const usedRolls = rollsOf(r).filter(roll => rollStatusOf(roll).runs.length > 0);
+    if(!usedRolls.length) return '';
+    const rollCards = usedRolls.map(roll=>{
       const s = rollStatusOf(roll);
       const pct = roll.weight>0 ? Math.min(100, Math.round(s.consumed/roll.weight*100)) : (s.status==='completed'?100:0);
       const barColor = s.status==='completed' ? 'var(--grn-m)' : (s.status==='in_machine' ? 'var(--amb-m)' : 'var(--brd2)');
-      let cumUsed = 0;
-      const historyRows = s.runs.length ? s.runs.map(p=>{
-          cumUsed += (p.matSachetQtyUsed||0);
-          const rollFinished = cumUsed >= roll.weight - 0.005;
-          const rowLabel = rollFinished ? 'Complete' : 'Leftover';
-          const rowBadge = rollFinished ? 'bg' : 'ba';
-          const bagsLabel = rollFinished ? 'bags produced' : 'bags produced so far';
+      // One row per recorded stage — a batch that went Leftover then later Complete
+      // shows both stages here in sequence, not summed into a single final row
+      const historyRows = s.runs.map(entry=>{
+          const isComplete = entry.status==='complete';
+          const rowLabel = isComplete ? 'Complete' : 'Leftover';
+          const rowBadge = isComplete ? 'bg' : 'ba';
+          const bagsText = isComplete
+            ? entry.cumQty.toLocaleString()+' bags total produced'
+            : entry.addedQty.toLocaleString()+' bags produced so far';
           return `
           <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:4px 0;border-bottom:1px dashed var(--brd)">
-            <span style="color:var(--txt3)">${fmtDate(p.date)} · ${p.batch}</span>
-            <span>${(p.matSachetQtyUsed||0).toFixed(2)} kg used</span>
-            <span style="font-weight:600">${(p.qty||0).toLocaleString()} ${bagsLabel} · <span class="badge ${rowBadge}" style="font-size:8.5px;padding:1px 6px">${rowLabel}</span></span>
+            <span style="color:var(--txt3)">${fmtDate(entry.date)} · ${entry.batch}</span>
+            <span>${entry.matSachetQtyUsed.toFixed(2)} kg used</span>
+            <span style="font-weight:600">${bagsText} · <span class="badge ${rowBadge}" style="font-size:8.5px;padding:1px 6px">${rowLabel}</span></span>
           </div>`;
-        }).join('') : '<div style="font-size:11px;color:var(--txt3);padding:4px 0">Not drawn into any production run yet</div>';
+        }).join('');
       return `
       <div style="padding:.6rem .7rem;background:var(--surf2);border-radius:var(--r);margin-top:6px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -4034,7 +4095,7 @@ function renderRollTracker(q){
         <div style="display:flex;gap:12px;font-size:11.5px;flex-wrap:wrap;margin-top:4px">
           <span style="color:${s.avail>0?'var(--grn)':'var(--txt3)'}">${s.avail.toFixed(2)} kg remaining</span>
           <span>· <strong>${s.totalProduced.toLocaleString()}</strong> bags produced</span>
-          <span>· ${s.runs.length} run${s.runs.length!==1?'s':''}</span>
+          <span>· ${s.runs.length} stage${s.runs.length!==1?'s':''}</span>
         </div>
         <div style="width:100%;height:4px;background:var(--brd);border-radius:3px;overflow:hidden;margin-top:5px">
           <div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px;transition:width .3s"></div>
@@ -4050,12 +4111,16 @@ function renderRollTracker(q){
       <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap">
         <span style="font-family:'DM Mono',monospace;font-size:12.5px;font-weight:700;color:#1a5fcb">${r.altId||'—'}</span>
         ${r.isRemainder?'<span class="badge-rlt"><i class="ti ti-refresh-dot" style="font-size:9px"></i> Remainder</span>':''}
-        <span style="font-size:11px;color:var(--txt3)">${rolls.length} roll${rolls.length!==1?'s':''} on this shelf</span>
+        <span style="font-size:11px;color:var(--txt3)">${usedRolls.length} roll${usedRolls.length!==1?'s':''} used on this shelf</span>
         <span style="margin-left:auto;font-size:11px;color:var(--txt3)">${fmtDate(r.date)}</span>
       </div>
-      <div style="width:100%">${rollCards||'<div style="font-size:11.5px;color:var(--txt3)">No rolls recorded on this shelf</div>'}</div>
+      <div style="width:100%">${rollCards}</div>
     </div>`;
   }).join('');
+
+  if(!wrap.innerHTML.trim()){
+    wrap.innerHTML='<div class="empty" style="padding:1.5rem 0"><i class="ti ti-layers-subtract"></i><p>No printed rolls used in production yet</p></div>';
+  }
 }
 
 /* =============================================
@@ -4898,6 +4963,37 @@ function confirmAddCat(){
 function saveMachines(arr){
   try{ localStorage.setItem('xcel_machines', JSON.stringify(arr)); }catch(e){}
 }
+/* ── Drivers (admin-managed list, used on Supply/New Trip) ── */
+function saveDrivers(arr){
+  try{ localStorage.setItem('xcel_drivers', JSON.stringify(arr)); }catch(e){}
+}
+function populateDriverSelect(selectVal){
+  const sel=document.getElementById('sp-driver'); if(!sel) return;
+  sel.innerHTML='<option value="">— Select driver —</option>'+DRIVERS.map(d=>`<option value="${d}">${d}</option>`).join('');
+  if(selectVal && DRIVERS.includes(selectVal)) sel.value=selectVal;
+}
+function promptAddDriver(){
+  document.getElementById('adddriver-input').value='';
+  document.getElementById('adddriver-err').style.display='none';
+  document.getElementById('adddriver-mo').classList.add('open');
+  setTimeout(()=>document.getElementById('adddriver-input').focus(),50);
+}
+function closeAddDriverMo(){ document.getElementById('adddriver-mo').classList.remove('open'); }
+function confirmAddDriver(){
+  const input = document.getElementById('adddriver-input');
+  const name = input.value.trim();
+  const errEl = document.getElementById('adddriver-err');
+  const errMsg = document.getElementById('adddriver-err-msg');
+  if(!name){ errMsg.textContent='Enter a driver name'; errEl.style.display='flex'; return; }
+  if(DRIVERS.some(d=>d.toLowerCase()===name.toLowerCase())){
+    errMsg.textContent='That driver already exists'; errEl.style.display='flex'; return;
+  }
+  DRIVERS.push(name);
+  saveDrivers(DRIVERS);
+  populateDriverSelect(name);
+  closeAddDriverMo();
+  toast('Driver "'+name+'" added','s');
+}
 
 /* =============================================
    UPDATE PRODUCTION RECORD — machine locking + batch completion
@@ -4942,11 +5038,18 @@ function onUprBatchChange(){
   const qtyInput=document.getElementById('upr-qty');
   const sofarRow=document.getElementById('upr-sofar-row');
   const sofarVal=document.getElementById('upr-sofar-val');
+  const machineSel=document.getElementById('upr-machine');
+  const machineHint=document.getElementById('upr-machine-hint');
   if(!p){
     if(lotPrev) lotPrev.value='';
     if(hint) hint.textContent='';
     populateUprMachineSelect();
-    if(statusSel) statusSel.value='';
+    if(machineSel) machineSel.disabled=false;
+    if(machineHint) machineHint.textContent='';
+    if(statusSel){
+      statusSel.innerHTML='<option value="">— Select status —</option><option value="complete">Production Complete</option><option value="in_progress">Leftovers in Machine</option>';
+      statusSel.value='';
+    }
     if(qtyRow) qtyRow.style.display='none';
     if(qtyInput) qtyInput.value='';
     if(sofarRow) sofarRow.style.display='none';
@@ -4958,7 +5061,24 @@ function onUprBatchChange(){
   if(lotPrev) lotPrev.value=lotLabel;
   if(hint) hint.textContent='Logged '+fmtDate(p.date)+' · '+p.type+(p.qty?' · '+p.qty+' bags so far':'');
   populateUprMachineSelect(p.id, p.machine||'');
-  if(statusSel) statusSel.value='';
+  // Once a batch has already been assigned a machine, lock it — resuming/continuing
+  // production must stay on the same machine, not switch to a different one
+  if(p.machine){
+    if(machineSel){ machineSel.value=p.machine; machineSel.disabled=true; }
+    if(machineHint) machineHint.innerHTML='<i class="ti ti-lock" style="color:var(--amb)"></i> Locked to <strong>'+p.machine+'</strong> — this batch already started on this machine';
+  } else {
+    if(machineSel) machineSel.disabled=false;
+    if(machineHint) machineHint.textContent='';
+  }
+  // A batch that already has a machine assigned has already been through one
+  // "Leftovers in Machine" cycle — it can't be marked leftover a second time on
+  // the same machine, so only Production Complete is offered from here on
+  if(statusSel){
+    statusSel.innerHTML = p.machine
+      ? '<option value="">— Select status —</option><option value="complete">Production Complete</option>'
+      : '<option value="">— Select status —</option><option value="complete">Production Complete</option><option value="in_progress">Leftovers in Machine</option>';
+    statusSel.value='';
+  }
   if(qtyRow) qtyRow.style.display='none';
   if(qtyInput) qtyInput.value='';
   // Keep the cumulative quantity produced so far visible when reopening a leftover record
@@ -5021,8 +5141,13 @@ function submitProdUpdate(){
   p.status=status;
   if(note) p.note = p.note ? p.note+' — '+note : note;
 
+  // Keep a per-stage log so a batch that goes Leftover then later Complete shows both
+  // stages in roll history, instead of only the final state
+  p.updateLog = p.updateLog || [];
+  p.updateLog.push({ ts: Date.now(), date: TODAY, status, addedQty, cumQty: p.qty });
+
   if(window.fsReady && p._fbId){
-    fsUpdateDoc(fsDoc('production', p._fbId), {machine:p.machine, qty:p.qty, status:p.status, note:p.note}).catch(e=>console.warn('FS prod update:',e));
+    fsUpdateDoc(fsDoc('production', p._fbId), {machine:p.machine, qty:p.qty, status:p.status, note:p.note, updateLog:p.updateLog}).catch(e=>console.warn('FS prod update:',e));
   }
 
   showOk('upr-ok');
