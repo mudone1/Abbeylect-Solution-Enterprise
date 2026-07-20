@@ -691,12 +691,7 @@ table.dt tbody tr:hover td{background:var(--surf2);}
                 <div id="sp-going-fields">
                   <div class="field">
                     <label>Driver name</label>
-                    <div style="display:flex;gap:6px">
-                      <select id="sp-driver" style="flex:1">
-                        <option value="">— Select driver —</option>
-                      </select>
-                      <button class="btn btn-outline btn-sm admin-nav" id="add-driver-btn" style="display:none;flex-shrink:0" onclick="promptAddDriver()" title="Add a new driver"><i class="ti ti-plus"></i></button>
-                    </div>
+                    <input type="text" id="sp-driver" placeholder="e.g. Musa">
                   </div>
                   <div class="field">
                     <label>Product</label>
@@ -2106,21 +2101,6 @@ table.dt tbody tr:hover td{background:var(--surf2);}
   </div>
 </div>
 
-<div class="mo" id="adddriver-mo">
-  <div class="modal">
-    <div class="modal-hd"><span>Add driver</span><button class="modal-x" onclick="closeAddDriverMo()"><i class="ti ti-x"></i></button></div>
-    <div class="field full" style="margin-bottom:1.2rem">
-      <label>Driver name</label>
-      <input type="text" id="adddriver-input" placeholder="e.g. Musa" maxlength="40">
-      <div class="err" id="adddriver-err" style="display:none;margin-top:6px"><i class="ti ti-alert-circle"></i> <span id="adddriver-err-msg">Enter a driver name</span></div>
-    </div>
-    <div style="display:flex;gap:9px">
-      <button class="btn btn-primary btn-full" onclick="confirmAddDriver()"><i class="ti ti-check"></i> Add driver</button>
-      <button class="btn btn-outline btn-full" onclick="closeAddDriverMo()">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <div class="mo" id="loan-repay-mo">
   <div class="modal">
     <div class="modal-hd"><span>Log repayment</span><button class="modal-x" onclick="closeLoanRepayMo()"><i class="ti ti-x"></i></button></div>
@@ -2328,8 +2308,6 @@ const EXP_CATS_BASE = ['Operator','Fuel','Repair','Driver','Maintenance','Equipm
 let CUSTOM_EXP_CATS = (function(){ try{ const r=localStorage.getItem('xcel_exp_cats'); return r?JSON.parse(r):[]; }catch(e){ return []; } })();
 // Machines list (admin-managed, persisted in localStorage)
 let MACHINES = (function(){ try{ const r=localStorage.getItem('xcel_machines'); return r?JSON.parse(r):['Machine 1']; }catch(e){ return ['Machine 1']; } })();
-// Drivers (admin-managed list, used on the Supply/New Trip screen)
-let DRIVERS = (function(){ try{ const r=localStorage.getItem('xcel_drivers'); return r?JSON.parse(r):[]; }catch(e){ return []; } })();
 const ALL_PAGES = [
   {key:'sale',   label:'Record sale',          icon:'ti-shopping-cart'},
   {key:'prod',   label:'Log production',       icon:'ti-packages'},
@@ -2580,7 +2558,6 @@ function finaliseLogin(user){
   setDates();
   populateExpCats();
   populateUprMachineSelect();
-  populateDriverSelect();
   populateLoanStaffSelect();
   document.getElementById('p-batch').value=genBatchCode(document.getElementById('p-date').value);
   resetRollRows();
@@ -2630,8 +2607,6 @@ function applyUserPermissionsToNav(user){
   if(addCatBtn) addCatBtn.style.display = (isAdmin||canDo('add_exp_cat')) ? '' : 'none';
   const addMachineBtn = document.getElementById('add-machine-btn');
   if(addMachineBtn) addMachineBtn.style.display = isAdmin ? '' : 'none';
-  const addDriverBtn = document.getElementById('add-driver-btn');
-  if(addDriverBtn) addDriverBtn.style.display = isAdmin ? '' : 'none';
 }
 
 /* =============================================
@@ -3078,7 +3053,6 @@ function selSaleType(t, el){
   el.classList.add('sel');
   document.getElementById('walkin-fields').style.display = t==='walkin' ? 'contents' : 'none';
   document.getElementById('supply-fields').style.display = t==='supply' ? 'contents' : 'none';
-  if(t==='supply') populateDriverSelect();
   document.getElementById('leakage-fields').style.display = t==='leakage' ? '' : 'none';
   document.getElementById('r-body-walkin').style.display = t==='walkin' ? '' : 'none';
   document.getElementById('r-body-supply').style.display = t==='supply' ? '' : 'none';
@@ -4924,37 +4898,6 @@ function confirmAddCat(){
 function saveMachines(arr){
   try{ localStorage.setItem('xcel_machines', JSON.stringify(arr)); }catch(e){}
 }
-/* ── Drivers (admin-managed list, used on Supply/New Trip) ── */
-function saveDrivers(arr){
-  try{ localStorage.setItem('xcel_drivers', JSON.stringify(arr)); }catch(e){}
-}
-function populateDriverSelect(selectVal){
-  const sel=document.getElementById('sp-driver'); if(!sel) return;
-  sel.innerHTML='<option value="">— Select driver —</option>'+DRIVERS.map(d=>`<option value="${d}">${d}</option>`).join('');
-  if(selectVal && DRIVERS.includes(selectVal)) sel.value=selectVal;
-}
-function promptAddDriver(){
-  document.getElementById('adddriver-input').value='';
-  document.getElementById('adddriver-err').style.display='none';
-  document.getElementById('adddriver-mo').classList.add('open');
-  setTimeout(()=>document.getElementById('adddriver-input').focus(),50);
-}
-function closeAddDriverMo(){ document.getElementById('adddriver-mo').classList.remove('open'); }
-function confirmAddDriver(){
-  const input = document.getElementById('adddriver-input');
-  const name = input.value.trim();
-  const errEl = document.getElementById('adddriver-err');
-  const errMsg = document.getElementById('adddriver-err-msg');
-  if(!name){ errMsg.textContent='Enter a driver name'; errEl.style.display='flex'; return; }
-  if(DRIVERS.some(d=>d.toLowerCase()===name.toLowerCase())){
-    errMsg.textContent='That driver already exists'; errEl.style.display='flex'; return;
-  }
-  DRIVERS.push(name);
-  saveDrivers(DRIVERS);
-  populateDriverSelect(name);
-  closeAddDriverMo();
-  toast('Driver "'+name+'" added','s');
-}
 
 /* =============================================
    UPDATE PRODUCTION RECORD — machine locking + batch completion
@@ -4999,18 +4942,11 @@ function onUprBatchChange(){
   const qtyInput=document.getElementById('upr-qty');
   const sofarRow=document.getElementById('upr-sofar-row');
   const sofarVal=document.getElementById('upr-sofar-val');
-  const machineSel=document.getElementById('upr-machine');
-  const machineHint=document.getElementById('upr-machine-hint');
   if(!p){
     if(lotPrev) lotPrev.value='';
     if(hint) hint.textContent='';
     populateUprMachineSelect();
-    if(machineSel) machineSel.disabled=false;
-    if(machineHint) machineHint.textContent='';
-    if(statusSel){
-      statusSel.innerHTML='<option value="">— Select status —</option><option value="complete">Production Complete</option><option value="in_progress">Leftovers in Machine</option>';
-      statusSel.value='';
-    }
+    if(statusSel) statusSel.value='';
     if(qtyRow) qtyRow.style.display='none';
     if(qtyInput) qtyInput.value='';
     if(sofarRow) sofarRow.style.display='none';
@@ -5022,24 +4958,7 @@ function onUprBatchChange(){
   if(lotPrev) lotPrev.value=lotLabel;
   if(hint) hint.textContent='Logged '+fmtDate(p.date)+' · '+p.type+(p.qty?' · '+p.qty+' bags so far':'');
   populateUprMachineSelect(p.id, p.machine||'');
-  // Once a batch has already been assigned a machine, lock it — resuming/continuing
-  // production must stay on the same machine, not switch to a different one
-  if(p.machine){
-    if(machineSel){ machineSel.value=p.machine; machineSel.disabled=true; }
-    if(machineHint) machineHint.innerHTML='<i class="ti ti-lock" style="color:var(--amb)"></i> Locked to <strong>'+p.machine+'</strong> — this batch already started on this machine';
-  } else {
-    if(machineSel) machineSel.disabled=false;
-    if(machineHint) machineHint.textContent='';
-  }
-  // A batch that already has a machine assigned has already been through one
-  // "Leftovers in Machine" cycle — it can't be marked leftover a second time on
-  // the same machine, so only Production Complete is offered from here on
-  if(statusSel){
-    statusSel.innerHTML = p.machine
-      ? '<option value="">— Select status —</option><option value="complete">Production Complete</option>'
-      : '<option value="">— Select status —</option><option value="complete">Production Complete</option><option value="in_progress">Leftovers in Machine</option>';
-    statusSel.value='';
-  }
+  if(statusSel) statusSel.value='';
   if(qtyRow) qtyRow.style.display='none';
   if(qtyInput) qtyInput.value='';
   // Keep the cumulative quantity produced so far visible when reopening a leftover record
